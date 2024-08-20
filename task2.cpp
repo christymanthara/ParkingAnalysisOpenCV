@@ -1,4 +1,10 @@
 
+// Task 1
+// Write a program that loads the image provided (street_scene.png), shows it and evaluates
+// the Canny image. To verify the effect on the final result, add one or more trackbar(s) 1 to
+// control the parameters of the Canny edge detector. Move the trackbars and check how
+// changing each parameter has an influence on the resulting image. Please note: the Canny
+// image shall be refreshed every time a trackbar is modified.
 
 
 
@@ -21,7 +27,7 @@ const int max_lowThreshold = 100;
 const int kernel_size = 3;
 const char* window_name = "Canny Image";
 
-static void CannyThreshold(int, void*)
+static Mat CannyThreshold(Mat grayImage)
 {
 
 //step2: we apply gaussian blur
@@ -33,6 +39,8 @@ Canny( bluredImage, detected_edges, lowThreshold, lowThreshold*3, kernel_size );
 final = Scalar::all(0);
 colorImage.copyTo( final, detected_edges);
 imshow( window_name, final );
+
+return final;
 
 }
 
@@ -53,9 +61,11 @@ Mat thresh1;
 threshold(grayImage, thresh1, 240, 255, cv::THRESH_BINARY);
 imshow("thresh1",thresh1);
 
+//using the canny on the image
+Mat cannyObtained = CannyThreshold(grayImage);
+imshow("Canny",cannyObtained);
 
-
-
+//using the cannyoutput for the houghlines
 
 waitKey(0);
 return(0);
