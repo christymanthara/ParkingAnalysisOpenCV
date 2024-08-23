@@ -1,7 +1,3 @@
-
-
-
-
 #include<opencv2/core/core.hpp>
 #include<opencv2/highgui/highgui.hpp>
 #include<opencv2/imgproc.hpp>
@@ -96,6 +92,11 @@ cvtColor(img,grayImage, COLOR_BGR2GRAY);
         bitwise_and(img, rangeMask3C, final, rangeMask);
         namedWindow("Lines Masked", WINDOW_NORMAL);
         imshow("Lines Masked", final);
+
+        //now i will apply closing to connect the lines
+
+        morphologyEx( final, final, MORPH_CLOSE, cv::getStructuringElement(MORPH_RECT,Size(7,7) )); 
+        imshow("Closed final", final);
 
 //---------------------------------------------------------------
 
