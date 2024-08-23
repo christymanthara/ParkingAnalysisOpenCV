@@ -1,10 +1,4 @@
 
-// Task 1
-// Write a program that loads the image provided (street_scene.png), shows it and evaluates
-// the Canny image. To verify the effect on the final result, add one or more trackbar(s) 1 to
-// control the parameters of the Canny edge detector. Move the trackbars and check how
-// changing each parameter has an influence on the resulting image. Please note: the Canny
-// image shall be refreshed every time a trackbar is modified.
 
 
 
@@ -20,21 +14,30 @@ using namespace cv;
 
 Mat colorImage;
 Mat grayImage,bluredImage,detected_edges, final, croppedframe;
+int alpha_slider, thresh1, angle=10;
+double alpha;
+double beta;
+Mat img, imgHsv;
 
+const int alpha_slider_max = 200;
+const int angle_max = 359;
 int lowThreshold = 0;
-const int max_lowThreshold = 100;
+const int max_lowThreshold = 50;
 // const int ratio = 3;
 const int kernel_size = 3;
 const char* window_name = "Canny Image";
+Mat edges, rangeMask, rangeMask3C;
 
 static Mat CannyThreshold(Mat grayImage)
 {
 
 //step2: we apply gaussian blur
-GaussianBlur( grayImage, bluredImage, Size( 5,5), 0, 0 );
+GaussianBlur( grayImage, bluredImage, Size( 3,3), 0, 0 );
 
 //step3:Apply Canny edge detection
-Canny( bluredImage, detected_edges, lowThreshold, lowThreshold*3, kernel_size );
+// Canny( bluredImage, detected_edges, lowThreshold, lowThreshold*3, kernel_size );
+
+Canny( bluredImage, detected_edges, lowThreshold, lowThreshold*3);
 
 final = Scalar::all(0);
 colorImage.copyTo( final, detected_edges);
@@ -44,28 +47,68 @@ return final;
 
 }
 
+
+static void on_trackbar( int, void* )
+{
+GaussianBlur( grayImage, grayImage, Size( 3,3), 0, 0 );
+Canny(grayImage, edges, 100, 200);
+
+
+// Create a vector to store lines of the image
+
+vector<Vec4i> lines;
+// Apply Hough Transform
+HoughLinesP(edges, lines, 1, CV_PI/180, thresh1, angle, 5);
+// Draw lines on the image
+for (size_t i=0; i<lines.size(); i++) {
+    Vec4i l = lines[i];
+    line(img, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(255, 0, 0), 3, LINE_AA);
+}
+// Show result image
+imshow("HoughLines", img);
+}
+
+
 int main(int argc, char** argv)
 {
-colorImage = cv::imread("input.jpg", IMREAD_COLOR);
-imshow("Original image",colorImage);
+img = cv::imread("input.jpg", IMREAD_COLOR);
+imshow("Original image",img);
 
-//step1: convert to grayscale 
-cvtColor(colorImage,grayImage, COLOR_BGR2GRAY);
-namedWindow( window_name, WINDOW_AUTOSIZE );
-// //creating the trackbar and calling it
-// createTrackbar( "Min Threshold:", window_name, &lowThreshold, max_lowThreshold, CannyThreshold);
+cvtColor(img, imgHsv, COLOR_BGR2HSV);
+namedWindow("HSV Image", WINDOW_NORMAL);
+imshow("HSV Image", imgHsv);
+
+cvtColor(img,grayImage, COLOR_BGR2GRAY);
+
+//---------------------------------------------
+
+        Scalar lower_white(6, 25, 132);
+        Scalar upper_white(161, 244, 255);
+
+        // Create mask using the color range defined
+        inRange(imgHsv, lower_white, upper_white, rangeMask);
+
+        namedWindow("HSV ImageMask", WINDOW_NORMAL);
+        imshow("HSV ImageMask", rangeMask);
+
+        cvtColor(rangeMask, rangeMask3C, COLOR_GRAY2BGR);
+
+        bitwise_and(img, rangeMask3C, final, rangeMask);
+        namedWindow("Lines Masked", WINDOW_NORMAL);
+        imshow("Lines Masked", final);
+
+//---------------------------------------------------------------
 
 
-// i used threshold to segment out only the white lines using appropriate threshold values .
-Mat thresh1;
-threshold(grayImage, thresh1, 240, 255, cv::THRESH_BINARY);
-imshow("thresh1",thresh1);
 
-//using the canny on the image
-Mat cannyObtained = CannyThreshold(grayImage);
-imshow("Canny",cannyObtained);
 
-//using the cannyoutput for the houghlines
+
+namedWindow("HoughLines", WINDOW_AUTOSIZE); 
+char TrackbarName[50],TrackbarName2[50];
+sprintf( TrackbarName, "Alpha x %d", alpha_slider_max );
+createTrackbar( TrackbarName, "HoughLines", &thresh1, alpha_slider_max, on_trackbar );
+sprintf( TrackbarName2, "Angle x %d", alpha_slider_max );
+createTrackbar( TrackbarName2, "HoughLines", &angle, angle_max, on_trackbar );
 
 waitKey(0);
 return(0);
