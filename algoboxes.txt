@@ -1,1 +1,2 @@
 1. read the files from sequence0/frames
+2. sending each file through the canny edge detection

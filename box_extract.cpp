@@ -9,17 +9,45 @@ namespace fs = std::filesystem;
 using namespace std;
 using namespace cv;
 
+
+Mat grayImage, bluredImage, detected_edges, final;
+int lowThreshold = 80, upperThreshold;
+
+static Mat CannyThreshold(Mat img)
+{
+
+//step1: grayscale
+cvtColor(img,grayImage, COLOR_BGR2GRAY);
+
+//step2: we apply gaussian blur
+GaussianBlur( grayImage, bluredImage, Size( 3,3), 0, 0 );
+
+//step3:Apply Canny edge detection
+// Canny( bluredImage, detected_edges, lowThreshold, lowThreshold*3, kernel_size );
+
+Canny( bluredImage, detected_edges, lowThreshold, lowThreshold*3);
+
+// final = Scalar::all(0);
+// colorImage.copyTo( final, detected_edges);
+// imshow( window_name, final );
+// imshow( window_name, detected_edges );
+
+
+return detected_edges;
+
+}
+
 int main() {
-    std::string directory = "ParkingLot_dataset/sequence0/frames"; 
+    string directory = "ParkingLot_dataset/sequence0/frames"; 
 
     int i =1;    
     for (const auto& entry : fs::directory_iterator(directory)) {
         
-        std::string filepath = entry.path().string();
-        std::string filename = entry.path().filename().string(); // getting the filename
+        string filepath = entry.path().string();
+        string filename = entry.path().filename().string(); // getting the filename
 
         //load the file as image
-        cv::Mat image = cv::imread(filepath);
+        Mat image = cv::imread(filepath);
 
         if (image.empty()) {
             cout << "Could not open the images: " << filepath << std::endl;
@@ -28,9 +56,15 @@ int main() {
 
         // cv::imshow(filename, image);
         
-        cv::imshow("image" + to_string(i),image);
+        imshow("image" + to_string(i),image);
+
+        //calling Canny
+        final = CannyThreshold(image);
+        imshow("Cannyimage" + to_string(i),final);
+        
+
         i++;
-        cv::waitKey(0); 
+        waitKey(0); 
     }
 return (0);
 
