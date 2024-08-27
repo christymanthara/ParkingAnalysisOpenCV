@@ -17,11 +17,11 @@ Mat img, imgHsv;
 
 const int alpha_slider_max = 200;
 const int angle_max = 359;
-int lowThreshold = 0;
+int lowThreshold = 80;//80 or 100 gives the best
 const int max_lowThreshold = 50;
 // const int ratio = 3;
 const int kernel_size = 3;
-const char* window_name = "Canny Image";
+const char* window_name = "Canny Image fromm fn";
 Mat edges, rangeMask, rangeMask3C;
 
 static Mat CannyThreshold(Mat grayImage)
@@ -36,10 +36,12 @@ GaussianBlur( grayImage, bluredImage, Size( 3,3), 0, 0 );
 Canny( bluredImage, detected_edges, lowThreshold, lowThreshold*3);
 
 final = Scalar::all(0);
-colorImage.copyTo( final, detected_edges);
-imshow( window_name, final );
+// colorImage.copyTo( final, detected_edges);
+// imshow( window_name, final );
+imshow( window_name, detected_edges );
 
-return final;
+
+return detected_edges;
 
 }
 
@@ -75,6 +77,29 @@ namedWindow("HSV Image", WINDOW_NORMAL);
 imshow("HSV Image", imgHsv);
 
 cvtColor(img,grayImage, COLOR_BGR2GRAY);
+
+Mat contourStart = CannyThreshold(grayImage);
+
+//now we find the contours
+        
+
+vector<vector<Point> > contours;
+vector<Vec4i> hierarchy;
+findContours( contourStart, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE );
+
+//displaying the contours
+        Mat drawing = Mat::zeros( contourStart.size(), CV_8UC3 );
+
+        for( size_t i = 0; i< contours.size(); i++ )
+        {
+            Scalar color = Scalar( 0,0,255 );
+            drawContours( drawing, contours, (int)i, color, 2, LINE_8, hierarchy, 0 );
+        }
+
+        imshow( "Contours", drawing );
+
+// GaussianBlur( grayImage, grayImage, Size( 3,3), 0, 0 );
+// Canny(grayImage, edges, 100, 200);
 
 //---------------------------------------------
 
