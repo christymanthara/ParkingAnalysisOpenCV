@@ -32,10 +32,10 @@ Canny( bluredImage, detected_edges, lowThreshold, lowThreshold*3);
 // imshow( window_name, final );
 // imshow( window_name, detected_edges );
 
-
 return detected_edges;
-
 }
+
+
 
 int main() {
     string directory = "ParkingLot_dataset/sequence0/frames"; 
@@ -58,6 +58,10 @@ int main() {
         
         imshow("image" + to_string(i),image);
 
+        //create a black image of the same size as the original image
+        Mat blackimg = Mat::zeros(image.size(),CV_8UC3);
+
+        imshow("Blackimage" + to_string(i),blackimg);
         //calling Canny
         final = CannyThreshold(image);
         imshow("Cannyimage" + to_string(i),final);
