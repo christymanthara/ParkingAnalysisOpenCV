@@ -4,3 +4,4 @@ hsvrange.py
 hsv_value.npy
 pugixmlcheck.cpp
 getxml.cpp
+readfiles.cpp

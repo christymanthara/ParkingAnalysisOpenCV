@@ -16,6 +16,7 @@ int main() {
         cout << "Failed to load XML file: " << result.description() << endl;
         //return contours;
     }
+    
 
     else 
     {
