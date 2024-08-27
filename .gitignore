@@ -1,4 +1,4 @@
-output
+./output
 essentials.txt
 hsvrange.py
 hsv_value.npy
