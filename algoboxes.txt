@@ -1,3 +1,7 @@
-1. read the files from sequence0/frames
-2. sending each file through the canny edge detection
-3. make roi around the areas that are necessary. leave the rest.
+1. Read the files from sequence0/frames
+2. Sending each file through the canny edge detection
+3. Make roi around the areas that are necessary. leave the rest.
+4. Convert to greyscale
+5. Apply thresholding
+6. Apply blurring
+7. using morphologyex gave better results
