@@ -111,12 +111,17 @@ int main() {
         // morphologyEx( final, final, MORPH_CLOSE, cv::getStructuringElement(MORPH_RECT,Size(5,5) )); 
 
         //detecting edges using the morphological operators
+
+        cvtColor(masked,masked, COLOR_BGR2GRAY);
+        // GaussianBlur( masked, masked, Size( 3,3), 0, 0 );
         morphologyEx( masked, final,MORPH_GRADIENT, Mat()); //works better
-        threshold(final,final,100, 200, cv::THRESH_BINARY); 
+        threshold(final,final,100, 200, cv::THRESH_BINARY);  //adding thresh otsu
         
         imshow("Closedimage" + to_string(i),final); 
 
         //now we use erosion and dilation to make the output more prominent     
+        // Mat kernel = getStructuringElement(MORPH_RECT, Size(5, 5));
+        // dilate(final,final,kernel);
         dilate(final,final,Mat());
         imshow("Dilatedimage" + to_string(i),final); 
 
@@ -133,10 +138,10 @@ int main() {
 
         // Probabilistic Hough Line Transform
         vector<Vec4f> lines; // will hold the results of the detection
-        // HoughLinesP(final, lines, 10, CV_PI/180, 50, 100, 70 ); 
+        HoughLinesP(detected_edges, lines, 1, CV_PI/180, 20, 10, 10 ); // use the default acumulator value rho =1
 
-        // for(int i =0; i<(int)lines.size();i++)
-        // {
+        for(int i =0; i<(int)lines.size();i++)
+        {
         // //finding slope using using y2 - y1/x2-x1
         // double slope = (lines[i][3] - lines[i][1]) / (lines[i][2] - lines[i][0]);
         // double angle = atan(slope);
@@ -147,9 +152,9 @@ int main() {
         // if(angle>=50 && angle<=70)
         // {
         //     std::cout<<angle;
-        // cv::line(image,cv::Point(lines[i][0],lines[i][1]), cv::Point(lines[i][2],lines[i][3]),cv::Scalar(0, 0, 255),5,LINE_8,0);
+        cv::line(image,cv::Point(lines[i][0],lines[i][1]), cv::Point(lines[i][2],lines[i][3]),cv::Scalar(0, 0, 255),5,LINE_8,0);
 
-        // }
+        }
 
         // }
 
