@@ -158,6 +158,20 @@ int main() {
         masked.copyTo(mserimg); 
 
         mserimg = applyMSER(mserimg,i);
+
+        vector<vector<Point>> contours;
+        vector<Vec4i> hierarchy;
+        //finding contours of mserimg
+        // findContours(mserimg, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
+        // //drawing the contours finally
+        // for (size_t i = 0; i < contours.size(); i++) 
+        // {
+        // Scalar color = Scalar(0, 255, 0); // Green 
+        // drawContours(mserimg, contours, (int)i, color, 2, LINE_8, hierarchy, 0);
+        // }
+
+        // imshow("Contours in mserimg", mserimg);
+
         
         // image.copyTo(masked);
 
@@ -193,8 +207,7 @@ int main() {
         Canny( final, detected_edges, lowThreshold, 250);
         imshow("Cannyimage" + to_string(i),detected_edges); //calling canny directly
 
-        vector<vector<Point>> contours;
-        vector<Vec4i> hierarchy;
+        
 
         
         // Probabilistic Hough Line Transform
@@ -231,7 +244,24 @@ int main() {
         // findlines(masked,i);
 
         //--------------------------------------------------------------------------------------
-        
+        //trying the convex hull of the contours identified
+        Mat threshold_output;
+        vector< vector<Point>> hull(contours.size());
+        for(int i = 0; i < contours.size(); i++)
+            convexHull(Mat(contours[i]), hull[i], false);
+
+        Mat drawing;
+ 
+      for(int i = 0; i < contours.size(); i++) {
+        Scalar color_contours = Scalar(0, 255, 0); // green - color for contours
+        Scalar color = Scalar(255, 0, 0); // blue - color for convex hull
+        // draw ith contour
+            drawContours(drawing, contours, i, color_contours, 1, 8, vector<Vec4i>(), 0, Point());
+        // draw ith convex hull
+        drawContours(drawing, hull, i, color, 1, 8, vector<Vec4i>(), 0, Point());
+         
+}
+imshow("Contours Convex hull",drawing);
         
 
         // masked = masking(image,i);
