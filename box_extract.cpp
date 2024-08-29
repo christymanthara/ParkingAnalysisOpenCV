@@ -57,7 +57,10 @@ void masking(Mat image,int i)
 
         //applyinng the mask to the original image
         bitwise_and(image,image,masked_image,blackimg);
-        imshow("Mask Applied" + to_string(i),masked_image);
+        imshow("And Mask Applied" + to_string(i),masked_image);
+        bitwise_not(image,masked_image,blackimg);
+        imshow("Not Mask Applied" + to_string(i),masked_image); //using the not mask also removes the white lines into black
+        
 }
 
 
