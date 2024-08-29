@@ -33,7 +33,7 @@ return detected_edges;
 }
 
 
-static Mat masking(Mat image,int i)
+static Mat masking(Mat image,int i) //works perfectly
 {
     Mat masked_image;
 
@@ -53,7 +53,7 @@ static Mat masking(Mat image,int i)
 
         //applyinng the mask to the original image
         bitwise_and(image,image,masked_image,blackimg);
-        imshow("And Mask Applied" + to_string(i),masked_image);
+        // imshow("And Mask Applied" + to_string(i),masked_image);
         // bitwise_not(image,masked_image,blackimg);
         // imshow("Not Mask Applied" + to_string(i),masked_image); //using the not mask also removes the white lines into black
 
@@ -80,6 +80,53 @@ static Mat findlines(Mat img,int i)
 
 }
 
+static Mat applyMSER(Mat img, int i)
+{
+        Mat output(img.size(),CV_8UC3);
+        output = cv::Scalar(255,255,255);
+        // cvtColor(img,img, COLOR_BGR2GRAY);
+        vector<std::vector<cv::Point>> mpoints;
+        std::vector< Rect > bboxes;
+        //detect MSER features
+        //using MSER
+        Ptr<MSER> mser;
+        mser = cv::MSER::create(5,1200,70000);
+        mser->detectRegions(img,mpoints,bboxes);
+
+        //drawing the detected regions
+        for (size_t i = 0; i < bboxes.size(); i++) {
+        rectangle(img, bboxes[i], Scalar(0, 255, 0));  // Draw rectangle around the detected region
+        }
+        for (size_t i = 0; i < mpoints.size(); i++) {
+        polylines(img, mpoints[i], true, Scalar(0, 255, 0), 2);
+        }
+        //drawing with random colors
+        RNG rng;
+        for(vector<vector<Point>>::iterator it=mpoints.begin();it!=mpoints.end();++it)
+        {
+            //generating random color
+            cv::Vec3b c(rng.uniform(0,255),rng.uniform(0,255),rng.uniform(0,255));
+
+            //for each point in MSER set
+            for (auto itPts = it->begin(); itPts != it->end(); ++itPts) {
+            // If the point is part of the foreground (white in grayscale, for example)
+            // we color it with the random color
+            output.at<Vec3b>(*itPts) = c;
+        }
+
+
+        }
+
+
+
+
+        // Display the image with detected regions
+        imshow("MSER Regions"+ to_string(i), img);
+        imshow("MSER Regions with random colors"+ to_string(i), output);
+return img;
+
+}
+
 
 int main() {
     string directory = "ParkingLot_dataset/sequence0/frames"; 
@@ -102,11 +149,17 @@ int main() {
         
         imshow("image" + to_string(i),image);
 
-        Mat masked = masking(image,i);
+        Mat masked;
 
+        masked = masking(image,i);
+
+        Mat mserimg;
+
+        masked.copyTo(mserimg); 
+
+        mserimg = applyMSER(mserimg,i);
         
-        
-        
+        // image.copyTo(masked);
 
         // morphologyEx( final, final, MORPH_CLOSE, cv::getStructuringElement(MORPH_RECT,Size(5,5) )); 
 
@@ -117,16 +170,20 @@ int main() {
         morphologyEx( masked, final,MORPH_GRADIENT, Mat()); //works better
         threshold(final,final,100, 200, cv::THRESH_BINARY);  //adding thresh otsu
         
-        imshow("Closedimage" + to_string(i),final); 
+        // imshow("Closedimage" + to_string(i),final); 
 
         //now we use erosion and dilation to make the output more prominent     
-        // Mat kernel = getStructuringElement(MORPH_RECT, Size(5, 5));
+        Mat kernel = getStructuringElement(MORPH_RECT, Size(5, 5));
         // dilate(final,final,kernel);
         dilate(final,final,Mat());
-        imshow("Dilatedimage" + to_string(i),final); 
+        // imshow("Dilatedimage" + to_string(i),final); 
 
         erode(final,final,Mat());
-        imshow("Erodedimage" + to_string(i),final);  
+        // imshow("Erodedimage" + to_string(i),final);  
+
+        morphologyEx( final, final,MORPH_CLOSE, kernel); //closing
+        // imshow("After Morph close" + to_string(i),final);
+
 
         //uncomment for canny
         //calling Canny
@@ -136,37 +193,57 @@ int main() {
         Canny( final, detected_edges, lowThreshold, 250);
         imshow("Cannyimage" + to_string(i),detected_edges); //calling canny directly
 
+        vector<vector<Point>> contours;
+        vector<Vec4i> hierarchy;
+
+        
         // Probabilistic Hough Line Transform
         vector<Vec4f> lines; // will hold the results of the detection
-        HoughLinesP(detected_edges, lines, 1, CV_PI/180, 20, 10, 10 ); // use the default acumulator value rho =1
+        HoughLinesP(detected_edges, lines, 1, CV_PI/180, 20, 10, 30 ); // use the default acumulator value rho =1
+        Mat blackimg = Mat::zeros(image.size(),CV_8UC3);
 
+        
         for(int i =0; i<(int)lines.size();i++)
         {
-        // //finding slope using using y2 - y1/x2-x1
-        // double slope = (lines[i][3] - lines[i][1]) / (lines[i][2] - lines[i][0]);
-        // double angle = atan(slope);
-        // angle = angle * 180 / M_PI;
-        
-        // //finding arc tan of the slope gives us the angle
-
-        // if(angle>=50 && angle<=70)
-        // {
-        //     std::cout<<angle;
-        cv::line(image,cv::Point(lines[i][0],lines[i][1]), cv::Point(lines[i][2],lines[i][3]),cv::Scalar(0, 0, 255),5,LINE_8,0);
-
+    
+        cv::line(image,cv::Point(lines[i][0],lines[i][1]), cv::Point(lines[i][2],lines[i][3]),cv::Scalar(0, 0, 255),7,LINE_8,0);
+  
         }
 
         // }
-
+        // imshow("lined mask",blackimg);    
         imshow("lined image",image);
+
+        //finding contours
+        findContours(detected_edges, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
         
+
+        //drawing the contours finally
+        for (size_t i = 0; i < contours.size(); i++) 
+        {
+        Scalar color = Scalar(0, 255, 0); // Green 
+        drawContours(blackimg, contours, (int)i, color, 2, LINE_8, hierarchy, 0);
+        }
+
+        // imshow("Contours", blackimg);
 
         //trying with findlines()
         // findlines(masked,i);
 
+        //--------------------------------------------------------------------------------------
+        
+        
+
+        // masked = masking(image,i);
+        
+
+
+
+
         i++;
         waitKey(0); 
     }
+
 return (0);
 
 }

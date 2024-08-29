@@ -5,3 +5,4 @@
 5. Apply thresholding
 6. Apply blurring
 7. using morphologyex gave better results
+8. finding contours on the canny images
