@@ -250,13 +250,14 @@ int main() {
         for(int i = 0; i < contours.size(); i++)
             convexHull(Mat(contours[i]), hull[i], false);
 
-        Mat drawing;
+//drawing the hull
+        Mat drawing=Mat::zeros(image.size(),CV_8UC3);;
  
-      for(int i = 0; i < contours.size(); i++) {
-        Scalar color_contours = Scalar(0, 255, 0); // green - color for contours
+      for(size_t i = 0; i < contours.size(); i++) {
+        // Scalar color_contours = Scalar(0, 255, 0); // green - color for contours
         Scalar color = Scalar(255, 0, 0); // blue - color for convex hull
         // draw ith contour
-            drawContours(drawing, contours, i, color_contours, 1, 8, vector<Vec4i>(), 0, Point());
+            drawContours(drawing, contours, (int)i, color, 2, LINE_8, hierarchy, 0);
         // draw ith convex hull
         drawContours(drawing, hull, i, color, 1, 8, vector<Vec4i>(), 0, Point());
          
@@ -264,9 +265,13 @@ int main() {
 imshow("Contours Convex hull",drawing);
         
 
-        // masked = masking(image,i);
         
 
+        // masked = masking(image,i);
+        
+        //trying with approxpolyn
+        Mat approxfound;
+        cv::approxPolyDP(contours,approxfound,4,true);
 
 
 
