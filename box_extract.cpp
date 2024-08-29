@@ -12,6 +12,7 @@ using namespace cv;
 
 Mat grayImage, bluredImage, detected_edges, final;
 int lowThreshold = 80, upperThreshold;
+std::vector<cv::Point> polygon_corners;
 
 static Mat CannyThreshold(Mat img)
 {
@@ -36,6 +37,29 @@ return detected_edges;
 }
 
 
+void masking(Mat image,int i)
+{
+    Mat masked_image;
+
+    //create a black image of the same size as the original image
+        Mat blackimg = Mat::zeros(image.size(),CV_8UC1);
+        imshow("Blackimage" + to_string(i),blackimg);
+
+    //taking the polygon area (hard coding)
+        polygon_corners.push_back(cv::Point(243, 46));  
+        polygon_corners.push_back(cv::Point(611, 699)); 
+        polygon_corners.push_back(cv::Point(912, 616)); 
+        polygon_corners.push_back(cv::Point(408, 17));  
+        
+
+        fillPoly(blackimg, polygon_corners, Scalar(255, 255, 255)); //fill the mask with white
+        imshow("Blackimage filled" + to_string(i),blackimg);
+
+        //applyinng the mask to the original image
+        bitwise_and(image,image,masked_image,blackimg);
+        imshow("Mask Applied" + to_string(i),masked_image);
+}
+
 
 int main() {
     string directory = "ParkingLot_dataset/sequence0/frames"; 
@@ -58,13 +82,19 @@ int main() {
         
         imshow("image" + to_string(i),image);
 
-        //create a black image of the same size as the original image
-        Mat blackimg = Mat::zeros(image.size(),CV_8UC3);
+        masking(image,i);
 
-        imshow("Blackimage" + to_string(i),blackimg);
+        
+
+        
+
         //calling Canny
         final = CannyThreshold(image);
         imshow("Cannyimage" + to_string(i),final);
+
+
+        
+        
         
 
         i++;
