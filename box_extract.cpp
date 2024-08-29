@@ -43,8 +43,8 @@ static Mat masking(Mat image,int i) //works perfectly
 
     //taking the polygon area (hard coding)
         polygon_corners.push_back(cv::Point(243, 46));  
-        polygon_corners.push_back(cv::Point(614, 718)); 
-        polygon_corners.push_back(cv::Point(933, 585)); 
+        polygon_corners.push_back(cv::Point(649, 705)); 
+        polygon_corners.push_back(cv::Point(911, 596)); 
         polygon_corners.push_back(cv::Point(412, 19));  
         
 
@@ -90,7 +90,7 @@ static Mat applyMSER(Mat img, int i)
         //detect MSER features
         //using MSER
         Ptr<MSER> mser;
-        mser = cv::MSER::create(5,1200,70000);
+        mser = cv::MSER::create(5,800,8000,0.2,5,1000);//15,1000,8000,0.5,0.5,1000
         mser->detectRegions(img,mpoints,bboxes);
 
         //drawing the detected regions
