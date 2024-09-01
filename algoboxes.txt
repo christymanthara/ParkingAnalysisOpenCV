@@ -6,3 +6,4 @@
 6. Apply blurring
 7. using morphologyex gave better results
 8. finding contours on the canny images
+9. trying sobel to find the edges 

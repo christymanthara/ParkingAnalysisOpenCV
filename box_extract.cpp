@@ -128,6 +128,25 @@ return img;
 }
 
 
+void sobelApplied(Mat img)
+{
+    Mat sobelx, sobely, sobelxy;
+    Sobel(img, sobelx, CV_64F, 1, 0, 5);
+    Sobel(img, sobely, CV_64F, 0, 1, 5);
+    Sobel(img, sobelxy, CV_64F, 1, 1, 5);
+
+    // Display Sobel edge detection images
+    imshow("Sobel X", sobelx);
+    
+    imshow("Sobel Y", sobely);
+ 
+    imshow("Sobel XY using Sobel() function", sobelxy);
+    
+
+
+}
+
+
 int main() {
     string directory = "ParkingLot_dataset/sequence0/frames"; 
 
@@ -152,6 +171,8 @@ int main() {
         Mat masked;
 
         masked = masking(image,i);
+
+        sobelApplied(masked);
 
         Mat mserimg;
 
@@ -244,25 +265,25 @@ int main() {
         // findlines(masked,i);
 
         //--------------------------------------------------------------------------------------
-        //trying the convex hull of the contours identified
-        Mat threshold_output;
-        vector< vector<Point>> hull(contours.size());
-        for(int i = 0; i < contours.size(); i++)
-            convexHull(Mat(contours[i]), hull[i], false);
+//         //trying the convex hull of the contours identified
+//         Mat threshold_output;
+//         vector< vector<Point>> hull(contours.size());
+//         for(int i = 0; i < contours.size(); i++)
+//             convexHull(Mat(contours[i]), hull[i], false);
 
-//drawing the hull
-        Mat drawing=Mat::zeros(image.size(),CV_8UC3);;
+// //drawing the hull
+//         Mat drawing=Mat::zeros(image.size(),CV_8UC3);;
  
-      for(size_t i = 0; i < contours.size(); i++) {
-        // Scalar color_contours = Scalar(0, 255, 0); // green - color for contours
-        Scalar color = Scalar(255, 0, 0); // blue - color for convex hull
-        // draw ith contour
-            drawContours(drawing, contours, (int)i, color, 2, LINE_8, hierarchy, 0);
-        // draw ith convex hull
-        drawContours(drawing, hull, i, color, 1, 8, vector<Vec4i>(), 0, Point());
+//       for(size_t i = 0; i < contours.size(); i++) {
+//         // Scalar color_contours = Scalar(0, 255, 0); // green - color for contours
+//         Scalar color = Scalar(255, 0, 0); // blue - color for convex hull
+//         // draw ith contour
+//             drawContours(drawing, contours, (int)i, color, 2, LINE_8, hierarchy, 0);
+//         // draw ith convex hull
+//         drawContours(drawing, hull, i, color, 1, 8, vector<Vec4i>(), 0, Point());
          
-}
-imshow("Contours Convex hull",drawing);
+
+// imshow("Contours Convex hull",drawing);
         
 
         
@@ -270,8 +291,8 @@ imshow("Contours Convex hull",drawing);
         // masked = masking(image,i);
         
         //trying with approxpolyn
-        Mat approxfound;
-        cv::approxPolyDP(contours,approxfound,4,true);
+        // Mat approxfound;
+        // cv::approxPolyDP(contours,approxfound,4,true);
 
 
 
