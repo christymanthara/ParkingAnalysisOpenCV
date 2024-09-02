@@ -219,9 +219,14 @@ int main() {
         // Draw the detected lines on the original image
         for (size_t i = 0; i < lines.size(); i++) {
         Vec4i l = lines[i];
+        //------------------------------------finding angle--------------------------------------------
         float angle;
         angle = atan2(l[3] - l[1],l[2] - l[0])* 180.0 / CV_PI;
         cout<<"the angle"<<i<< "is"<<angle<<endl;
+        //------------------------------------finding the length-----------------------------------------------
+        double length = sqrt(pow(l[2] - l[0], 2) + pow(l[3] - l[1], 2));
+        cout<<"the length of"<<i<< "is"<<length<<endl;
+
         line(image, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0, 0, 255), 3, LINE_AA);
 
         }
