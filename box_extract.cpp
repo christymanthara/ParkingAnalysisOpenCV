@@ -14,6 +14,7 @@ using namespace cv;
 Mat grayImage, bluredImage, detected_edges, final;
 int lowThreshold = 100, upperThreshold;
 std::vector<cv::Point> polygon_corners;
+Mat extImage;
 
 static Mat CannyThreshold(Mat img)
 {
@@ -180,6 +181,7 @@ int main() {
         Mat masked;
 
         masked = masking(image,i);
+        image.copyTo(extImage);
 
         //----------------------------------------------------------------gamma correction--------------------------------------
         float gamma = 3.2;
@@ -212,6 +214,23 @@ int main() {
         Canny(thresh, edges, 80, 150, 3); 
         imshow("Canny Image"+ to_string(i), edges);
 
+
+        //-----------------------------------------------------------------Finding Contours--------------------------------------------
+        vector<vector<Point>> contours;
+        vector<Vec4i> hierarchy;
+        // findContours(edges, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
+
+        //---------------------------------------------------------------drawing the contours-----------------------------------------
+        Mat contourImg;
+        image.copyTo(contourImg);
+        for (size_t i = 0; i < contours.size(); i++) {
+        Scalar color = Scalar(0, 255, 0); // Green color for contours
+
+         drawContours(contourImg, contours, (int)i, color, 2, LINE_8, hierarchy, 0); //uncomment to draw
+        
+    }
+    imshow("Contour Image"+ to_string(i), contourImg);
+
         //-----------------------------------------------------------------Hough transform---------------------------------------------
         vector<Vec4f> lines;
         HoughLinesP(edges, lines, 1, CV_PI / 180, 20, 10, 7);
@@ -222,23 +241,75 @@ int main() {
         Vec4i l = lines[i];
         //------------------------------------finding angle--------------------------------------------
         float angle;
-        angle = atan2(l[3] - l[1],l[2] - l[0])* 180.0 / CV_PI;
-        cout<<"the angle"<<i<< "is"<<angle<<endl;
+        int dx=l[3] - l[1];
+        int dy=l[2] - l[0];
+        // int dx=l[1] - l[3];
+        // int dy=l[0] - l[2];
+        angle = atan2(dy,dx)* 180.0 / CV_PI;
+        // cout<<"the angle"<<i<< "is"<<angle<<endl;
         //------------------------------------finding the length-----------------------------------------------
-        double length = sqrt(pow(l[2] - l[0], 2) + pow(l[3] - l[1], 2));
-        cout<<"the length of"<<i<< "is"<<length<<endl;
+        double length = sqrt(pow(dy, 2) + pow(dx, 2));
+        // cout<<"the length of"<<i<< "is"<<length<<endl;
 
-        //------------------------------------plotting the midpoint and writing the point-------------------------------------------------
+        //----------    --------------------------plotting the midpoint and writing the point-------------------------------------------------
         Point midpoint((l[0] + l[2]) / 2, (l[1] + l[3]) / 2);
-        
+
+        //---------------------------------------------fine tuning to remove the unwanted lines and displaying original lines--------------------------------------------------
+        if (length>=15)
+        {
+            
         line(image, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0, 0, 255), 3, LINE_AA);
 
         putText(image, format("%.2f", length), midpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 0, 0), 1, LINE_AA);
+        }
         
+        
+        //----------------------------------------doubling the length of the detected lines---------------------------------------------------
+        //using the equation of the slope and finding the coordinates
+        if (dx==0)
+        {
+            continue;
+        }
+        double slope =0;
+        slope = (dy/dx)* 180.0 / CV_PI;
+        if(slope<0)
+            slope = slope+360;
+        // double dx2 = dx*2;
+        // double dy2 = slope * dx2;
+        // int new_x2 = l[2] + static_cast<int>(dx2);
+        // int new_y2 = l[3] + static_cast<int>(dy2);
+        // int new_x2 = l[2] + dx/length * 50;
+        // int new_y2 = l[3] + dy/length * 50;
+        // int new_x2 = l[2] + length * cos(slope);
+        // int new_y2 = l[3] + length * sin(slope);
+
+        //-------------------------------------------------alternative approach using the midpoint theorem-----------------------------------------------
+        int new_x2 = (2* (l[2]-l[0])) + l[0];
+        int new_y2 = (2* (l[3]-l[1])) + l[1];
+
+        Point newpoint(new_x2, new_y2);
+
+
+        //---------------------------------------------fine tuning to remove the unwanted lines and displaying the new lines--------------------------------------------------
+        if (length>=15)
+        {
+            
+        line(image, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0, 0, 255), 3, LINE_AA);
+
+        putText(image, format("%.2f", length), midpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0), 1, LINE_AA);
+        putText(image, format("%.2f", length), newpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 255), 1, LINE_AA);
+        
+        
+        line(extImage, Point(l[0], l[1]), Point(new_x2, new_y2), Scalar(0, 255, 0), 3, LINE_AA);
+
+        // putText(image, format("%.2f", length), midpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0), 1, LINE_AA);
+
+        }
         }
 
     // Display the result
     imshow("Detected White Lines", image);
+    imshow("Extended White Lines", extImage);
 
         
 
@@ -254,8 +325,8 @@ int main() {
 
         // mserimg = applyMSER(mserimg,i);
 
-        vector<vector<Point>> contours;
-        vector<Vec4i> hierarchy;
+        // vector<vector<Point>> contours;
+        // vector<Vec4i> hierarchy;
         //finding contours of mserimg
         // findContours(mserimg, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
         // //drawing the contours finally
