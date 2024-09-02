@@ -217,7 +217,8 @@ int main() {
         HoughLinesP(edges, lines, 1, CV_PI / 180, 20, 10, 7);
 
         // Draw the detected lines on the original image
-        for (size_t i = 0; i < lines.size(); i++) {
+        for (size_t i = 0; i < lines.size(); i++) 
+        {
         Vec4i l = lines[i];
         //------------------------------------finding angle--------------------------------------------
         float angle;
@@ -227,8 +228,13 @@ int main() {
         double length = sqrt(pow(l[2] - l[0], 2) + pow(l[3] - l[1], 2));
         cout<<"the length of"<<i<< "is"<<length<<endl;
 
+        //------------------------------------plotting the midpoint and writing the point-------------------------------------------------
+        Point midpoint((l[0] + l[2]) / 2, (l[1] + l[3]) / 2);
+        
         line(image, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0, 0, 255), 3, LINE_AA);
 
+        putText(image, format("%.2f", length), midpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 0, 0), 1, LINE_AA);
+        
         }
 
     // Display the result
