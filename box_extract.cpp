@@ -182,23 +182,53 @@ int main() {
         masked = masking(image,i);
 
         //----------------------------------------------------------------gamma correction--------------------------------------
-        float gamma = 4;
+        float gamma = 3.2;
         cv::Mat gammaresult;
         gammaCorrection(masked, gammaresult, gamma);
-        imshow("Gamma corrected image", gammaresult); 
-        //----------------------------------------------------------------------------------------------------------------------
+        imshow("Gamma corrected image"+ to_string(i), gammaresult); 
+
+        //----------------------------------------------------------------trying MSER---------------------------------------------
+        // applyMSER(gammaresult,i);
+
+        //----------------------------------------------------------------converting to gray-------------------------------------
         //make into gray
         Mat gray;
         cvtColor(gammaresult, gray, COLOR_BGR2GRAY);
-        imshow("gray", gray);
+        imshow("gray"+ to_string(i), gray);
+        
+        //-------------------------------------------------------applying morphological operation-----------------------------------
+        morphologyEx( gray, final,MORPH_GRADIENT, Mat());
+        imshow("Morph gradient image" + to_string(i),final);
 
+        
         //-----------------------------------------------------------------applying thresholding------------------------------------
         Mat thresh;
-        threshold(gray, thresh, 100, 200, THRESH_BINARY + THRESH_OTSU); 
-        imshow("Thresh Lines", thresh);
+        threshold(final, thresh, 180, 200, THRESH_BINARY + THRESH_OTSU); 
+        imshow("Thresh lines"+ to_string(i), thresh);
 
-        //-----------------------------------------------------------------
+        //-----------------------------------------------------------------Canny edge detector-----------------------------------------
+        // Apply Canny edge detector
+        Mat edges;
+        Canny(thresh, edges, 80, 150, 3); 
+        imshow("Canny Image"+ to_string(i), edges);
+
+        //-----------------------------------------------------------------Hough transform---------------------------------------------
+        vector<Vec4f> lines;
+        HoughLinesP(edges, lines, 1, CV_PI / 180, 20, 10, 7);
+
+        // Draw the detected lines on the original image
+        for (size_t i = 0; i < lines.size(); i++) {
+        Vec4i l = lines[i];
+        line(image, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0, 0, 255), 3, LINE_AA);
+        }
+
+    // Display the result
+    imshow("Detected White Lines", image);
+
         
+
+        
+
         
         
         //sobelApplied(masked);
@@ -207,7 +237,7 @@ int main() {
 
         gammaresult.copyTo(mserimg); 
 
-        //mserimg = applyMSER(mserimg,i);
+        // mserimg = applyMSER(mserimg,i);
 
         vector<vector<Point>> contours;
         vector<Vec4i> hierarchy;
@@ -255,13 +285,13 @@ int main() {
         // imshow("Cannyimage" + to_string(i),final);
 
         Canny( final, detected_edges, lowThreshold, 250);
-        imshow("Cannyimage" + to_string(i),detected_edges); //calling canny directly
+        // imshow("Cannyimage" + to_string(i),detected_edges); //calling canny directly
 
         
 
         
         // Probabilistic Hough Line Transform
-        vector<Vec4f> lines; // will hold the results of the detection
+        // vector<Vec4f> lines; // will hold the results of the detection
         HoughLinesP(detected_edges, lines, 1, CV_PI/180, 20, 10, 30 ); // use the default acumulator value rho =1
         Mat blackimg = Mat::zeros(image.size(),CV_8UC3);
 
@@ -275,7 +305,7 @@ int main() {
 
         // }
         // imshow("lined mask",blackimg);    
-        imshow("lined image",image);
+        // imshow("lined image",image);
 
         //finding contours
         findContours(detected_edges, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
