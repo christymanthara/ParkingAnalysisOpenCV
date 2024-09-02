@@ -18,6 +18,7 @@
         "bitset": "cpp",
         "chrono": "cpp",
         "compare": "cpp",
+        "complex": "cpp",
         "concepts": "cpp",
         "condition_variable": "cpp",
         "cstdint": "cpp",
