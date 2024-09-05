@@ -235,6 +235,13 @@ float findLineAngle(const Vec4f& line) {
 
 }
 
+float findAngle(const Vec4f& line) {
+    int dx = line[2] - line[0];
+    int dy = line[3] - line[1];
+    return (atan2(dy, dx) * 180.0 / CV_PI );
+
+}
+
 //------------------------------------------------------------checking close and collinearity-------------------------------------------------
 bool checkCloseAndCollinear(const Vec4f& l1, const Vec4f& l2, float angleThreshold, double distanceThreshold) {
     float angle1 = findLineAngle(l1);
@@ -322,15 +329,28 @@ Mat constructRectangles( Mat image, vector<Vec4f> lines ,int distanceParallelThr
         if (isPaired[i]) 
             continue;
     Vec4f l1 = lines[i];
-    float angle1 = findLineAngle(l1);
+    float angle1 = findAngle(l1);
+
+    //flip the line coordinates if the angle is negative
+    if (angle1 < 0) {
+            swap(l1[0], l1[2]);
+            swap(l1[1], l1[3]);
+            // angle1 = -angle1; // Making the angle positive
+        }
 
     for (size_t j = i + 1; j < lines.size(); j++) {
         if (isPaired[j]) continue;
         Vec4f l2 = lines[j];
-        float angle2 = findLineAngle(l2);
+        float angle2 = findAngle(l2);
+
+        if (angle2 < 0) {
+                swap(l2[0], l2[2]);
+                swap(l2[1], l2[3]);
+                angle2 = -angle2; // Making the angle2 positive
+            }
 
         // Check if l1 and l2 are nearly parallel (angle difference is small)
-        if (fabs(angle1 - angle2) < 5) 
+        // if (fabs(angle1 - angle2) < 5) 
         {
             // Ensure the two lines are close to each other
             Point midpoint1((l1[0] + l2[0]) / 2, (l1[1] + l2[1]) / 2); //finding the midpoint of the 2 parallel lines
@@ -642,7 +662,7 @@ int main() {
 
 
         }
-        int parallelthreshold = 10;
+        int parallelthreshold = 80;
         Mat filteredRect = constructRectangles(randomcolored,filteredLines, parallelthreshold);
     
 
