@@ -375,14 +375,17 @@ int main() {
                                      line(image, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0, 0, 255), 3, LINE_AA);
 
                                      putText(image, format("%.2f", length), midpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 0, 0), 1, LINE_AA);
-                                    imshow("Detected White Lines", image);
+                                    
                                      //draw the lines in random colors as pairs
                                      
 
-                                     line(randomcolored, Point(l1[0], l1[1]), Point(l1[2], l1[3]), c, 3, LINE_AA);
-                                     line(randomcolored, Point(l2[0], l2[1]), Point(l2[2], l2[3]), c, 3, LINE_AA);
-                                    imshow("Detected White Line Pairs in random color", randomcolored);
+                                     //line(randomcolored, Point(l1[0], l1[1]), Point(l1[2], l1[3]), c, 3, LINE_AA);
+                                     //line(randomcolored, Point(l2[0], l2[1]), Point(l2[2], l2[3]), c, 3, LINE_AA);
+                                    // imshow("Detected White Line Pairs in random color", randomcolored);
 
+                                    //combining the pairs into a single line
+                                    line(randomcolored, Point((l1[0]+l2[0])/2,(l1[1]+l2[1])/2),Point((l1[2]+l2[2])/2,(l1[3]+l2[3])/2), Scalar(0,0,255),2);
+                                     imshow("Detected White Line Pairs in random color", randomcolored);
                                 
                            
 
