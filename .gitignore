@@ -7,3 +7,4 @@ getxml.cpp
 readfiles.cpp
 linedetect.cpp
 linedetect2.cpp
+combinelines.cpp

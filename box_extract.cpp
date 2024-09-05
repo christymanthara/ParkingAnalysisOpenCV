@@ -156,6 +156,76 @@ void gammaCorrection(const cv::Mat& src, cv::Mat& dst, float gamma) {
     cv::LUT(src, lut, dst);
 }
 
+//----------------------------------------------------------------------------------------------------------------------------------------------------
+// Helper function to calculate the distance between two points
+double pointDistance(Point p1, Point p2) {
+    return sqrt((p2.x - p1.x) * (p2.x - p1.x) + (p2.y - p1.y) * (p2.y - p1.y));
+}
+
+// Function to calculate the length of a line
+double lineLength(Vec4i line) {
+    Point p1(line[0], line[1]);
+    Point p2(line[2], line[3]);
+    return pointDistance(p1, p2);
+}
+
+// Function to find the distance between two lines (shortest distance between endpoints)
+double lineDistance(Vec4i line1, Vec4i line2) {
+    Point p1(line1[0], line1[1]);
+    Point p2(line1[2], line1[3]);
+    Point p3(line2[0], line2[1]);
+    Point p4(line2[2], line2[3]);
+
+    // Calculate all possible endpoint-to-endpoint distances
+    // double d1 = pointDistance(p1, p3);
+    double d2 = pointDistance(p1, p4);
+    // double d3 = pointDistance(p2, p3);
+    double d4 = pointDistance(p2, p4);
+
+    // Return the minimum distance
+    // return min({d1, d3});
+    return min({d2, d4});
+}
+
+// Function to filter lines based on distance and keep the shorter one
+void filterLines(vector<Vec4i>& lines, double distanceThreshold) {
+    vector<Vec4i> filteredLines;
+    vector<bool> keep(lines.size(), true); // Initially keep all lines
+
+    for (size_t i = 0; i < lines.size(); i++) {
+        if (!keep[i]) continue; // Skip if the line is already discarded
+
+        for (size_t j = i + 1; j < lines.size(); j++) {
+            if (!keep[j]) continue; // Skip if the line is already discarded
+
+            // Calculate the distance between lines
+            double distance = lineDistance(lines[i], lines[j]);
+
+            if (distance < distanceThreshold) {
+                // Compare the lengths and keep the shorter line
+                double length1 = lineLength(lines[i]);
+                double length2 = lineLength(lines[j]);
+
+                if (length1 < length2) {
+                    keep[j] = false; // Discard the longer line
+                } else {
+                    keep[i] = false; // Discard the longer line
+                    break;
+                }
+            }
+        }
+    }
+
+    // Collect the lines that are kept
+    for (size_t i = 0; i < lines.size(); i++) {
+        if (keep[i]) {
+            filteredLines.push_back(lines[i]);
+        }
+    }
+
+    lines = filteredLines; // Replace the original lines with the filtered lines
+}
+//----------------------------------------------------------------------------------------------------------------------------------------------------------
 
 int main() {
     string directory = "ParkingLot_dataset/sequence0/frames"; 
@@ -184,7 +254,7 @@ int main() {
         image.copyTo(extImage);
 
         //----------------------------------------------------------------gamma correction--------------------------------------
-        float gamma = 3.2;
+        float gamma = 3.0; //3.2
         cv::Mat gammaresult;
         gammaCorrection(masked, gammaresult, gamma);
         imshow("Gamma corrected image"+ to_string(i), gammaresult); 
@@ -232,19 +302,25 @@ int main() {
     imshow("Contour Image"+ to_string(i), contourImg);
 
         //-----------------------------------------------------------------Hough transform---------------------------------------------
-        vector<Vec4f> lines;
+        vector<Vec4i> lines;
         HoughLinesP(edges, lines, 1, CV_PI / 180, 20, 10, 7);
+
+
+
+        //---------------------------------------------------------------Choosing lines which are smaller-------------------------------------
+        double distanceThreshold = 2.0; // adjust this threshold
+        filterLines(lines, distanceThreshold);
+
 
         // Draw the detected lines on the original image
         for (size_t i = 0; i < lines.size(); i++) 
         {
-        Vec4i l = lines[i];
+            
+        Vec4f l = lines[i];
         //------------------------------------finding angle--------------------------------------------
         float angle;
         int dx=l[3] - l[1];
         int dy=l[2] - l[0];
-        // int dx=l[1] - l[3];
-        // int dy=l[0] - l[2];
         angle = atan2(dy,dx)* 180.0 / CV_PI;
         // cout<<"the angle"<<i<< "is"<<angle<<endl;
         //------------------------------------finding the length-----------------------------------------------
@@ -283,7 +359,7 @@ int main() {
         // int new_x2 = l[2] + length * cos(slope);
         // int new_y2 = l[3] + length * sin(slope);
 
-        //-------------------------------------------------alternative approach using the midpoint theorem-----------------------------------------------
+        //-------------------------------------------------alternative approach using the midpoint theorem to double the length-----------------------------------------------
         int new_x2 = (2* (l[2]-l[0])) + l[0];
         int new_y2 = (2* (l[3]-l[1])) + l[1];
 
@@ -291,19 +367,19 @@ int main() {
 
 
         //---------------------------------------------fine tuning to remove the unwanted lines and displaying the new lines--------------------------------------------------
-        if (length>=15)
+        if (length>=15 && angle>= 70 && angle<= 85)
         {
-            
-        line(image, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0, 0, 255), 3, LINE_AA);
-
-        putText(image, format("%.2f", length), midpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0), 1, LINE_AA);
-        putText(image, format("%.2f", length), newpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 255), 1, LINE_AA);
+            // if(slope>=50 && slope<=83)
+            {
+        
+            putText(extImage, format("%.2f", length), newpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 255), 1, LINE_AA);
+            putText(extImage, format("The angle is %.2f", angle), midpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
         
         
-        line(extImage, Point(l[0], l[1]), Point(new_x2, new_y2), Scalar(0, 255, 0), 3, LINE_AA);
-
-        // putText(image, format("%.2f", length), midpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 0), 1, LINE_AA);
-
+        
+            line(extImage, Point(l[0], l[1]), Point(new_x2, new_y2), Scalar(0, 255, 0), 1, LINE_AA);
+        
+            }
         }
         }
 
