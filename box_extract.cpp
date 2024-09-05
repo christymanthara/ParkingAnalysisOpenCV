@@ -364,10 +364,10 @@ int main() {
 
                             double distance = sqrt(pow(midpoint2.x - midpoint1.x, 2) + pow(midpoint2.y - midpoint1.y, 2)); //distance between the 2 midpoints
             
-                            if (length>=15)
+                            if (length>=15 && distance<distanceThreshold)
                             {
-                                if(distance<distanceThreshold)
-                                {
+                                
+                                
 
                                     //for drawing the lines with the random colors
                             
@@ -383,7 +383,7 @@ int main() {
                                      line(randomcolored, Point(l2[0], l2[1]), Point(l2[2], l2[3]), c, 3, LINE_AA);
                                     imshow("Detected White Line Pairs in random color", randomcolored);
 
-                                }
+                                
                            
 
                             }
