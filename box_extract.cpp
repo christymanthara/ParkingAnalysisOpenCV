@@ -310,6 +310,71 @@ Point findmidpoint(Vec4f line)
     Point midpoint((line[0] + line[2]) / 2, (line[1] + line[3]) / 2);
     return midpoint;
 }
+
+Mat constructRectangles( Mat image, vector<Vec4f> lines ,int distanceParallelThreshold)
+{   vector<bool> isPaired(lines.size(), false);
+    
+
+
+    for (size_t i = 0; i < lines.size(); i++) 
+    {
+
+        if (isPaired[i]) 
+            continue;
+    Vec4f l1 = lines[i];
+    float angle1 = findLineAngle(l1);
+
+    for (size_t j = i + 1; j < lines.size(); j++) {
+        if (isPaired[j]) continue;
+        Vec4f l2 = lines[j];
+        float angle2 = findLineAngle(l2);
+
+        // Check if l1 and l2 are nearly parallel (angle difference is small)
+        if (fabs(angle1 - angle2) < 5) 
+        {
+            // Ensure the two lines are close to each other
+            Point midpoint1((l1[0] + l2[0]) / 2, (l1[1] + l2[1]) / 2); //finding the midpoint of the 2 parallel lines
+            Point midpoint2((l1[2] + l2[2]) / 2, (l1[3] + l2[3]) / 2);
+            double distance = pointDistance(midpoint1, midpoint2);
+
+            if (distance < distanceParallelThreshold && distance > 5 ) 
+            {
+
+                cout<<"now here";
+                // We found two parallel lines that are close together.
+                // Now, calculate the four corner points of the rectangle.
+
+                Point p1(l1[0], l1[1]); // Starting point of the first line
+                Point p2(l1[2], l1[3]); // Ending point of the first line
+                Point p3(l2[0], l2[1]); // Starting point of the second line
+                Point p4(l2[2], l2[3]); // Ending point of the second line
+
+                // Draw a rectangle using these four points
+                line(image, p1, p3, Scalar(255, 255, 0), 2, LINE_AA); // Connect the start points
+                line(image, p2, p4, Scalar(255, 255, 0), 2, LINE_AA); // Connect the end points
+                line(image, p1, p2, Scalar(255, 255, 0), 2, LINE_AA); // Line along l1
+                line(image, p3, p4, Scalar(255, 255, 0), 2, LINE_AA); // Line along l2
+
+               
+
+                putText(image, "Rectangle", midpoint1, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
+                isPaired[i] = true;
+                isPaired[j] = true;
+                
+                break; //breaking after finding a pair for l1
+            }
+        }
+        }
+    }
+
+// cout<<"now here";
+    imshow("rectangles",image);
+    return image;
+    
+}
+
+
+
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 
 int main() {
@@ -447,6 +512,7 @@ int main() {
             mergedLines.push_back(currentLine);
         }
 
+
         
 
                             
@@ -545,7 +611,7 @@ int main() {
 
         //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         }
-
+        vector<Vec4f> filteredLines;
         //-------------------------------------------------------printing the recursively merged lines
         for (size_t i = 0; i < mergedLines.size(); i++) {
         Vec4f l = mergedLines[i];
@@ -568,18 +634,23 @@ int main() {
         {
         line(randomcolored, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0, 255, 0), 2, LINE_AA);
         putText(randomcolored, format("The angle is %.2f", angle), midpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
+        filteredLines.push_back(l);
         }
         }
 
+//==============================================================draw parallel lines into rectangles======================================================
+
 
         }
-
+        int parallelthreshold = 10;
+        Mat filteredRect = constructRectangles(randomcolored,filteredLines, parallelthreshold);
     
 
     // Display the result
     imshow("Detected White Lines", image);
     imshow("Extended White Lines", extImage);
     imshow("Detected White Lines and Merged", randomcolored);
+    imshow("Filtered Rectangles", filteredRect);
 
         
 
