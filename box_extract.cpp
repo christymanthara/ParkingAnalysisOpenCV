@@ -15,6 +15,7 @@ Mat grayImage, bluredImage, detected_edges, final;
 int lowThreshold = 100, upperThreshold;
 std::vector<cv::Point> polygon_corners;
 Mat extImage;
+RNG rnc;
 
 static Mat CannyThreshold(Mat img)
 {
@@ -253,6 +254,9 @@ int main() {
         masked = masking(image,i);
         image.copyTo(extImage);
 
+        Mat randomcolored;
+        image.copyTo(randomcolored);
+
         //----------------------------------------------------------------gamma correction--------------------------------------
         float gamma = 3.0; //3.2
         cv::Mat gammaresult;
@@ -312,6 +316,7 @@ int main() {
         filterLines(lines, distanceThreshold);
 
 
+                            
         // Draw the detected lines on the original image
         for (size_t i = 0; i < lines.size(); i++) 
         {
@@ -330,57 +335,100 @@ int main() {
         //----------    --------------------------plotting the midpoint and writing the point-------------------------------------------------
         Point midpoint((l[0] + l[2]) / 2, (l[1] + l[3]) / 2);
 
+        double distanceThreshold = 50.0;
+        //=============================================Finding lines that are close to each other====================================================
+        Vec4f l1 = lines[i];
+        Point midpoint1((l1[0] + l1[2]) / 2, (l1[1] + l1[3]) / 2); //midpoint of line1
+
+
+
+                            
+
         //---------------------------------------------fine tuning to remove the unwanted lines and displaying original lines--------------------------------------------------
-        if (length>=15)
-        {
+        for (size_t j = i + 1; j < lines.size(); j++) 
+         {
+                            // Vec4f l2 = lines[j];
+        
+                            // if (length>=15)
+                            // {
+                                
+                            // line(image, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0, 0, 255), 3, LINE_AA);
+
+                            // putText(image, format("%.2f", length), midpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 0, 0), 1, LINE_AA);
+                            // }
+
+
+                            Vec4f l2 = lines[j];
+                            
+                            Point midpoint2((l2[0] + l2[2]) / 2, (l2[1] + l2[3]) / 2); //midpoint of line2
+
+                            double distance = sqrt(pow(midpoint2.x - midpoint1.x, 2) + pow(midpoint2.y - midpoint1.y, 2)); //distance between the 2 midpoints
             
-        line(image, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0, 0, 255), 3, LINE_AA);
+                            if (length>=15)
+                            {
+                                if(distance<distanceThreshold)
+                                {
 
-        putText(image, format("%.2f", length), midpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 0, 0), 1, LINE_AA);
-        }
-        
-        
-        //----------------------------------------doubling the length of the detected lines---------------------------------------------------
-        //using the equation of the slope and finding the coordinates
-        if (dx==0)
-        {
-            continue;
-        }
-        double slope =0;
-        slope = (dy/dx)* 180.0 / CV_PI;
-        if(slope<0)
-            slope = slope+360;
-        // double dx2 = dx*2;
-        // double dy2 = slope * dx2;
-        // int new_x2 = l[2] + static_cast<int>(dx2);
-        // int new_y2 = l[3] + static_cast<int>(dy2);
-        // int new_x2 = l[2] + dx/length * 50;
-        // int new_y2 = l[3] + dy/length * 50;
-        // int new_x2 = l[2] + length * cos(slope);
-        // int new_y2 = l[3] + length * sin(slope);
+                                    //for drawing the lines with the random colors
+                            
+                                    cv::Vec3b c(rnc.uniform(0,255),rnc.uniform(0,255),rnc.uniform(0,255)); //generating a random color
+                                     line(image, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0, 0, 255), 3, LINE_AA);
 
-        //-------------------------------------------------alternative approach using the midpoint theorem to double the length-----------------------------------------------
-        int new_x2 = (2* (l[2]-l[0])) + l[0];
-        int new_y2 = (2* (l[3]-l[1])) + l[1];
+                                     putText(image, format("%.2f", length), midpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 0, 0), 1, LINE_AA);
+                                    imshow("Detected White Lines", image);
+                                     //draw the lines in random colors as pairs
+                                     
 
-        Point newpoint(new_x2, new_y2);
+                                     line(randomcolored, Point(l1[0], l1[1]), Point(l1[2], l1[3]), c, 3, LINE_AA);
+                                     line(randomcolored, Point(l2[0], l2[1]), Point(l2[2], l2[3]), c, 3, LINE_AA);
+                                    imshow("Detected White Line Pairs in random color", randomcolored);
+
+                                }
+                           
+
+                            }
+                            
+                            
+                            
+                            //----------------------------------------doubling the length of the detected lines---------------------------------------------------
+                            //using the equation of the slope and finding the coordinates
+                            if (dx==0)
+                            {
+                                continue;
+                            }
+                            double slope =0;
+                            slope = (dy/dx)* 180.0 / CV_PI;
+                            if(slope<0)
+                                slope = slope+360;
+                            
+
+                            //-------------------------------------------------alternative approach using the midpoint theorem to double the length-----------------------------------------------
+                            int new_x2 = (2* (l1[2]-l1[0])) + l1[0];
+                            int new_y2 = (2* (l1[3]-l1[1])) + l1[1];
+
+                            Point newpoint(new_x2, new_y2);
 
 
-        //---------------------------------------------fine tuning to remove the unwanted lines and displaying the new lines--------------------------------------------------
-        if (length>=15 && angle>= 70 && angle<= 85)
-        {
-            // if(slope>=50 && slope<=83)
-            {
-        
-            putText(extImage, format("%.2f", length), newpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 255), 1, LINE_AA);
-            putText(extImage, format("The angle is %.2f", angle), midpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
-        
-        
-        
-            line(extImage, Point(l[0], l[1]), Point(new_x2, new_y2), Scalar(0, 255, 0), 1, LINE_AA);
-        
-            }
-        }
+                            //---------------------------------------------fine tuning to remove the unwanted lines and displaying the new lines--------------------------------------------------
+                            if (length>=15 && angle>= 70 && angle<= 85) //filtering lines by the 
+                            {
+                                // if(slope>=50 && slope<=83)
+                                {
+
+                                
+                            
+                                putText(extImage, format("%.2f", length), newpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 255), 1, LINE_AA);
+                                putText(extImage, format("The angle is %.2f", angle), midpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
+                            
+                            
+                            
+                                line(extImage, Point(l[0], l[1]), Point(new_x2, new_y2), Scalar(0, 255, 0), 1, LINE_AA);
+                            
+
+
+                                }
+                            }
+         }
         }
 
     // Display the result
