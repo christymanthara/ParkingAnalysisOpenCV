@@ -189,8 +189,8 @@ double lineDistance(Vec4i line1, Vec4i line2) {
 }
 
 // Function to filter lines based on distance and keep the shorter one
-void filterLines(vector<Vec4i>& lines, double distanceThreshold) {
-    vector<Vec4i> filteredLines;
+void filterLines(vector<Vec4f>& lines, double distanceThreshold) {
+    vector<Vec4f> filteredLines;
     vector<bool> keep(lines.size(), true); // Initially keep all lines
 
     for (size_t i = 0; i < lines.size(); i++) {
@@ -225,6 +225,90 @@ void filterLines(vector<Vec4i>& lines, double distanceThreshold) {
     }
 
     lines = filteredLines; // Replace the original lines with the filtered lines
+}
+
+
+float findLineAngle(const Vec4f& line) {
+    int dx = line[2] - line[0];
+    int dy = line[3] - line[1];
+    return (atan2(dy, dx) * 180.0 / CV_PI +180);
+
+}
+
+//------------------------------------------------------------checking close and collinearity-------------------------------------------------
+bool checkCloseAndCollinear(const Vec4f& l1, const Vec4f& l2, float angleThreshold, double distanceThreshold) {
+    float angle1 = findLineAngle(l1);
+    float angle2 = findLineAngle(l2);
+    
+    if ((angle1 - angle2) > angleThreshold) {
+        return false;  // Angles are too different
+    }
+
+    Point p1_start(l1[0], l1[1]); //x1,y1
+    Point p1_end(l1[2], l1[3]); //x2,y2
+    Point p2_start(l2[0], l2[1]); //x3,y3
+    Point p2_end(l2[2], l2[3]); //x4,y4
+
+    return (pointDistance(p1_end, p2_start) < distanceThreshold ||
+            pointDistance(p1_end, p2_end) < distanceThreshold ||
+            pointDistance(p1_start, p2_start) < distanceThreshold ||
+            pointDistance(p1_start, p2_end) < distanceThreshold);
+}
+
+// Merge two lines into a single line by connecting the farthest points
+Vec4f mergeLines(const Vec4f& l1, const Vec4f& l2) {
+    Point p1_start(l1[0], l1[1]);
+    Point p1_end(l1[2], l1[3]);
+    Point p2_start(l2[0], l2[1]);
+    Point p2_end(l2[2], l2[3]);
+
+    Point start = p1_start;
+    Point end = p1_end;
+    
+    // Find the farthest pair of points
+    vector<Point> points = {p1_start, p1_end, p2_start, p2_end};
+    double maxDist = 0.0;
+    for (size_t i = 0; i < points.size(); ++i) {
+        for (size_t j = i + 1; j < points.size(); ++j) {
+            double dist = pointDistance(points[i], points[j]);
+            if (dist > maxDist) {
+                maxDist = dist;
+                start = points[i];
+                end = points[j];
+            }
+        }
+    }
+
+    return Vec4f(start.x, start.y, end.x, end.y);
+}
+
+// Recursive function to merge lines that are close and collinear
+void recursiveMerge(Vec4f& currentLine, vector<Vec4f>& lines, vector<bool>& merged, float angleThreshold, double distanceThreshold) {
+    for (size_t i = 0; i < lines.size(); i++) {
+        if (!merged[i]) {
+            Vec4f nextLine = lines[i];
+
+            if (checkCloseAndCollinear(currentLine, nextLine, angleThreshold, distanceThreshold)) {
+                double llength = lineLength(currentLine);
+                // if(llength<20)
+                // {
+                //     continue;
+                // }
+                // Merge the lines and mark the current line as merged
+                currentLine = mergeLines(currentLine, nextLine);
+                merged[i] = true;  // Mark the next line as merged
+
+                // Recursively merge with more lines
+                recursiveMerge(currentLine, lines, merged, angleThreshold, distanceThreshold);
+            }
+        }
+    }
+}
+
+Point findmidpoint(Vec4f line)
+{
+    Point midpoint((line[0] + line[2]) / 2, (line[1] + line[3]) / 2);
+    return midpoint;
 }
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -306,7 +390,7 @@ int main() {
     imshow("Contour Image"+ to_string(i), contourImg);
 
         //-----------------------------------------------------------------Hough transform---------------------------------------------
-        vector<Vec4i> lines;
+        vector<Vec4f> lines;
         HoughLinesP(edges, lines, 1, CV_PI / 180, 20, 10, 7);
 
 
@@ -315,8 +399,10 @@ int main() {
         double distanceThreshold = 2.0; // adjust this threshold
         filterLines(lines, distanceThreshold);
 
-
-                            
+        //------------------------------------------------------to check merging--------------------------------
+        vector<Vec4f> mergedLines;  // for storing the merged lines
+        vector<bool> merged(lines.size(), false);
+        //---------------------------------------------------------------------------------------------------------                    
         // Draw the detected lines on the original image
         for (size_t i = 0; i < lines.size(); i++) 
         {
@@ -335,108 +421,165 @@ int main() {
         //----------    --------------------------plotting the midpoint and writing the point-------------------------------------------------
         Point midpoint((l[0] + l[2]) / 2, (l[1] + l[3]) / 2);
 
-        double distanceThreshold = 50.0;
+        double distanceThreshold = 15.0;
+        double angleThreshold = 10.0;
         //=============================================Finding lines that are close to each other====================================================
         Vec4f l1 = lines[i];
         Point midpoint1((l1[0] + l1[2]) / 2, (l1[1] + l1[3]) / 2); //midpoint of line1
 
-
-
-                            
-
-        //---------------------------------------------fine tuning to remove the unwanted lines and displaying original lines--------------------------------------------------
-        for (size_t j = i + 1; j < lines.size(); j++) 
-         {
-                            // Vec4f l2 = lines[j];
+        // double llength = lineLength(l1);
         
-                            // if (length>=15)
-                            // {
-                                
-                            // line(image, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0, 0, 255), 3, LINE_AA);
 
-                            // putText(image, format("%.2f", length), midpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 0, 0), 1, LINE_AA);
-                            // }
+        //applying recursive merging
 
+        if (!merged[i]) {
+            Vec4f currentLine = lines[i];  // Start with an unmerged line
 
-                            Vec4f l2 = lines[j];
+            // Recursively merge lines that are close and collinear
+            recursiveMerge(currentLine, lines, merged, angleThreshold, distanceThreshold);
+
+            float angle;
+            int dy=currentLine[3] - currentLine[1];
+            int dx=currentLine[2] - currentLine[0];
+            angle = atan2(dy,dx)* 180.0 / CV_PI;
+
+            // After merging, add the combined line to the mergedLines vector
+            mergedLines.push_back(currentLine);
+        }
+
+        
+
                             
-                            Point midpoint2((l2[0] + l2[2]) / 2, (l2[1] + l2[3]) / 2); //midpoint of line2
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        //---------------------------------------------fine tuning to remove the unwanted lines and displaying original lines--------------------------------------------------
+        // for (size_t j = i + 1; j < lines.size(); j++) 
+        //  {
+        //                     // Vec4f l2 = lines[j];
+        
+        //                     // if (length>=15)
+        //                     // {
+                                
+        //                     // line(image, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0, 0, 255), 3, LINE_AA);
 
-                            double distance = sqrt(pow(midpoint2.x - midpoint1.x, 2) + pow(midpoint2.y - midpoint1.y, 2)); //distance between the 2 midpoints
+        //                     // putText(image, format("%.2f", length), midpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 0, 0), 1, LINE_AA);
+        //                     // }
+
+
+        //                     Vec4f l2 = lines[j];
+                            
+        //                     Point midpoint2((l2[0] + l2[2]) / 2, (l2[1] + l2[3]) / 2); //midpoint of line2
+
+        //                     double distance = sqrt(pow(midpoint2.x - midpoint1.x, 2) + pow(midpoint2.y - midpoint1.y, 2)); //distance between the 2 midpoints
             
-                            if (length>=15 && distance<distanceThreshold)
-                            {
+        //                     if (length>=15 && distance<distanceThreshold)
+        //                     {
                                 
                                 
 
-                                    //for drawing the lines with the random colors
+        //                             //for drawing the lines with the random colors
                             
-                                    cv::Vec3b c(rnc.uniform(0,255),rnc.uniform(0,255),rnc.uniform(0,255)); //generating a random color
-                                     line(image, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0, 0, 255), 3, LINE_AA);
+        //                             cv::Vec3b c(rnc.uniform(0,255),rnc.uniform(0,255),rnc.uniform(0,255)); //generating a random color
+        //                              line(image, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0, 0, 255), 3, LINE_AA);
 
-                                     putText(image, format("%.2f", length), midpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 0, 0), 1, LINE_AA);
+        //                              putText(image, format("%.2f", length), midpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 0, 0), 1, LINE_AA);
                                     
-                                     //draw the lines in random colors as pairs
+        //                              //draw the lines in random colors as pairs
                                      
 
-                                     //line(randomcolored, Point(l1[0], l1[1]), Point(l1[2], l1[3]), c, 3, LINE_AA);
-                                     //line(randomcolored, Point(l2[0], l2[1]), Point(l2[2], l2[3]), c, 3, LINE_AA);
-                                    // imshow("Detected White Line Pairs in random color", randomcolored);
+        //                              //line(randomcolored, Point(l1[0], l1[1]), Point(l1[2], l1[3]), c, 3, LINE_AA);
+        //                              //line(randomcolored, Point(l2[0], l2[1]), Point(l2[2], l2[3]), c, 3, LINE_AA);
+        //                             // imshow("Detected White Line Pairs in random color", randomcolored);
 
-                                    //combining the pairs into a single line
-                                    line(randomcolored, Point((l1[0]+l2[0])/2,(l1[1]+l2[1])/2),Point((l1[2]+l2[2])/2,(l1[3]+l2[3])/2), Scalar(0,0,255),2);
-                                     imshow("Detected White Line Pairs in random color", randomcolored);
+        //                             //combining the pairs into a single line
+        //                             line(randomcolored, Point((l1[0]+l2[0])/2,(l1[1]+l2[1])/2),Point((l1[2]+l2[2])/2,(l1[3]+l2[3])/2), Scalar(0,0,255),2);
+                                     
+
+                                     
                                 
                            
 
-                            }
+        //                     }
                             
                             
                             
-                            //----------------------------------------doubling the length of the detected lines---------------------------------------------------
-                            //using the equation of the slope and finding the coordinates
-                            if (dx==0)
-                            {
-                                continue;
-                            }
-                            double slope =0;
-                            slope = (dy/dx)* 180.0 / CV_PI;
-                            if(slope<0)
-                                slope = slope+360;
+        //                     //----------------------------------------doubling the length of the detected lines---------------------------------------------------
+        //                     //using the equation of the slope and finding the coordinates
+        //                     if (dx==0)
+        //                     {
+        //                         continue;
+        //                     }
+        //                     double slope =0;
+        //                     slope = (dy/dx)* 180.0 / CV_PI;
+        //                     if(slope<0)
+        //                         slope = slope+360;
                             
 
-                            //-------------------------------------------------alternative approach using the midpoint theorem to double the length-----------------------------------------------
-                            int new_x2 = (2* (l1[2]-l1[0])) + l1[0];
-                            int new_y2 = (2* (l1[3]-l1[1])) + l1[1];
+        //                     //-------------------------------------------------alternative approach using the midpoint theorem to double the length-----------------------------------------------
+        //                     int new_x2 = (2* (l1[2]-l1[0])) + l1[0];
+        //                     int new_y2 = (2* (l1[3]-l1[1])) + l1[1];
 
-                            Point newpoint(new_x2, new_y2);
+        //                     Point newpoint(new_x2, new_y2);
 
 
-                            //---------------------------------------------fine tuning to remove the unwanted lines and displaying the new lines--------------------------------------------------
-                            if (length>=15 && angle>= 70 && angle<= 85) //filtering lines by the 
-                            {
-                                // if(slope>=50 && slope<=83)
-                                {
+        //                     //---------------------------------------------fine tuning to remove the unwanted lines and displaying the new lines--------------------------------------------------
+        //                     // if (length>=15 && angle>= 70 && angle<= 85) //filtering lines by the 
+        //                     if (length>=15 )
+        //                     {
+        //                         // if(slope>=50 && slope<=83)
+        //                         {
 
                                 
                             
-                                putText(extImage, format("%.2f", length), newpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 255), 1, LINE_AA);
-                                putText(extImage, format("The angle is %.2f", angle), midpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
+        //                         putText(extImage, format("%.2f", length), newpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 255), 1, LINE_AA);
+        //                         putText(extImage, format("The angle is %.2f", angle), midpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
                             
                             
                             
-                                line(extImage, Point(l[0], l[1]), Point(new_x2, new_y2), Scalar(0, 255, 0), 1, LINE_AA);
+        //                         line(extImage, Point(l[0], l[1]), Point(new_x2, new_y2), Scalar(0, 255, 0), 1, LINE_AA);
                             
 
 
-                                }
-                            }
-         }
+        //                         }
+        //                     }
+        //  }
+
+        //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         }
+
+        //-------------------------------------------------------printing the recursively merged lines
+        for (size_t i = 0; i < mergedLines.size(); i++) {
+        Vec4f l = mergedLines[i];
+        float angle;
+        int dy=l[3] - l[1];
+        int dx=l[2] - l[0];
+        angle = atan2(dy,dx)* 180.0 / CV_PI;
+
+        if (angle < 0) 
+        {
+        angle += 180.0;
+        }
+
+        Point midpoint = findmidpoint(l);
+        double llength = lineLength(l);
+
+        if (angle >= 3 && angle <= 20)
+        {
+        if(llength>=20)
+        {
+        line(randomcolored, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0, 255, 0), 2, LINE_AA);
+        putText(randomcolored, format("The angle is %.2f", angle), midpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
+        }
+        }
+
+
+        }
+
+    
 
     // Display the result
     imshow("Detected White Lines", image);
     imshow("Extended White Lines", extImage);
+    imshow("Detected White Lines and Merged", randomcolored);
 
         
 

@@ -12,6 +12,6 @@ find the angles
 filter the lines by the angles
 find the midpoints of the lines 
 combine the lines that are pairs
-extend the lines = double them using midpoint theorem
-find collinearity of the lines
-if collinear combine them into a long line
+extend the lines i.e double them using midpoint theorem
+find collinearity of the close lines
+if collinear and close combine them into a long line
