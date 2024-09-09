@@ -320,14 +320,38 @@ Point findmidpoint(Vec4f line)
 
 Mat constructRectangles( Mat image, vector<Vec4f> lines ,int distanceParallelThreshold)
 {   vector<bool> isPaired(lines.size(), false);
+    vector<bool> left_first(lines.size(), false);
     
-
+    int smallestXIndex = -1;
+    float smallestX = numeric_limits<float>::max();
 
     for (size_t i = 0; i < lines.size(); i++) 
     {
+        if (lines[i][0] < smallestX) 
+        {
+            smallestX = lines[i][0];
+             smallestXIndex = i;
+        }
+    }
 
-        if (isPaired[i]) 
-            continue;
+    if(smallestXIndex != -1)
+        {
+            left_first[smallestXIndex] = true; // making the smallest left index into true so that you know which line is the top most one
+        }
+
+    
+
+    for (size_t i = 0; i < lines.size(); i++) 
+    {
+        int count =0;
+
+
+        if (left_first[i]==true ) 
+        {
+            count++;    //if the count is 1 then you are at the top most line
+            
+        }
+
     Vec4f l1 = lines[i];
     float angle1 = findAngle(l1);
 
@@ -339,7 +363,7 @@ Mat constructRectangles( Mat image, vector<Vec4f> lines ,int distanceParallelThr
         }
 
     for (size_t j = i + 1; j < lines.size(); j++) {
-        if (isPaired[j]) continue;
+        // if (isPaired[j]) continue;
         Vec4f l2 = lines[j];
         float angle2 = findAngle(l2);
 
@@ -352,10 +376,8 @@ Mat constructRectangles( Mat image, vector<Vec4f> lines ,int distanceParallelThr
         // Check if l1 and l2 are nearly parallel (angle difference is small)
         if (fabs(angle1 - angle2) < 5) 
         {
-            // Ensure the two lines are close to each other
-            // Point midpoint1((l1[0] + l2[0]) / 2, (l1[1] + l2[1]) / 2); //finding the midpoint of the 2 parallel lines taken from their lateral distances.
-            // Point midpoint2((l1[2] + l2[2]) / 2, (l1[3] + l2[3]) / 2);
-            Point midpoint1((l1[0] + l1[2]) / 2, (l1[1] + l1[3]) / 2); //finding the midpoint of the 2 parallel lines taken from their lateral distances.
+        
+            Point midpoint1((l1[0] + l1[2]) / 2, (l1[1] + l1[3]) / 2); //finding the midpoint of the 2 parallel lines 
             Point midpoint2((l2[0] + l2[2]) / 2, (l2[1] + l2[3]) / 2);
             double distance = pointDistance(midpoint1, midpoint2);
 
@@ -380,10 +402,15 @@ Mat constructRectangles( Mat image, vector<Vec4f> lines ,int distanceParallelThr
                
 
                 putText(image, "Rectangle", midpoint1, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
-                isPaired[i] = true;
-                isPaired[j] = true;
+                // isPaired[i] = true;
+                // isPaired[j] = true;
+                count++;
+
+                if (count>=1)
+                    break;
+
                 
-                break; //breaking after finding a pair for l1
+                // break; //breaking after finding a pair for l1
             }
         }
         }
@@ -665,7 +692,7 @@ int main() {
 
         }
         imshow("Detected White Lines and Merged", randomcolored);
-        int parallelthreshold = 80;
+        int parallelthreshold = 200;
         Mat filteredRect = constructRectangles(randomcolored,filteredLines, parallelthreshold);
     
 
