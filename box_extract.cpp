@@ -350,7 +350,7 @@ Mat constructRectangles( Mat image, vector<Vec4f> lines ,int distanceParallelThr
             }
 
         // Check if l1 and l2 are nearly parallel (angle difference is small)
-        // if (fabs(angle1 - angle2) < 5) 
+        if (fabs(angle1 - angle2) < 5) 
         {
             // Ensure the two lines are close to each other
             // Point midpoint1((l1[0] + l2[0]) / 2, (l1[1] + l2[1]) / 2); //finding the midpoint of the 2 parallel lines taken from their lateral distances.
@@ -644,8 +644,8 @@ int main() {
 
         if (angle < 0) 
         {
-        angle += 180.0;
-        }
+        angle += 180.0; //making +ve and in a range
+        }  
 
         Point midpoint = findmidpoint(l);
         double llength = lineLength(l);
@@ -664,6 +664,7 @@ int main() {
 
 
         }
+        imshow("Detected White Lines and Merged", randomcolored);
         int parallelthreshold = 80;
         Mat filteredRect = constructRectangles(randomcolored,filteredLines, parallelthreshold);
     
@@ -671,8 +672,9 @@ int main() {
     // Display the result
     imshow("Detected White Lines", image);
     imshow("Extended White Lines", extImage);
-    //imshow("Detected White Lines and Merged", randomcolored);
-    //imshow("Filtered Rectangles", filteredRect);
+
+    // imshow("Detected White Lines and Merged", randomcolored);
+    imshow("Filtered Rectangles", filteredRect);
 
         
 

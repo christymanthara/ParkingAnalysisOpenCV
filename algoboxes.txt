@@ -15,3 +15,13 @@ combine the lines that are pairs
 extend the lines i.e double them using midpoint theorem
 find collinearity of the close lines
 if collinear and close combine them into a long line
+
+
+ALgo for the boxing.
+--------------------------------------------
+1.Choose the line with the least x value.
+
+2.find the line below it and compare their lengths.
+    if the length of either is smaller than 80 percent of the other, make it 80 percent of the other.
+
+     
