@@ -228,7 +228,7 @@ Mat constructRectangles(Mat image, vector<Vec4i> lines, int distanceParallelThre
             count[i] = 2; 
             // Point p1(l1[0], l1[1]);  // Starting point of the first line
             // Point p2(l1[2], l1[3]);
-            // line(image, p1,p2,Scalar(155, 155, 200), 2, LINE_AA);//first line identification perfect
+            
         }
 
 
@@ -326,6 +326,9 @@ Mat constructRectangles(Mat image, vector<Vec4i> lines, int distanceParallelThre
                     double deltaX_end = p4.x - p2.x;
                     double angleright = atan2(deltaY_end, deltaX_end) * 180 / CV_PI + 180;     
 
+
+                 if (angleleft >= 50 && angleleft <= 60 && angleright >= 50 && angleright <= 60) 
+            {
                     Point midpointl((l1[0] + l2[0]) / 2, (l1[1] + l2[1]) / 2);
                     Point midpointr((l1[2] + l2[2]) / 2, (l1[3] + l2[3]) / 2); 
 
@@ -356,7 +359,7 @@ Mat constructRectangles(Mat image, vector<Vec4i> lines, int distanceParallelThre
                     // else if(isPaired[i]==true){
                     //     isPaired[i]=true;
                         
-                    // }
+            }
                     
 
                     
@@ -374,15 +377,8 @@ Mat constructRectangles(Mat image, vector<Vec4i> lines, int distanceParallelThre
     
 }
 
-//{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
 
-
-
-
-
-
-
-//----------------------------------------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------------------------------
 
 int main() {
     string directory = "ParkingLot_dataset/sequence0/frames"; 
@@ -426,7 +422,7 @@ int main() {
         //make into gray
         Mat gray;
         cvtColor(gammaresult, gray, COLOR_BGR2GRAY);
-        // imshow("gray"+ to_string(i), gray);
+        imshow("gray"+ to_string(i), gray);
         
         //-------------------------------------------------------applying morphological operation-----------------------------------
         morphologyEx( gray, final,MORPH_GRADIENT, Mat());
@@ -472,6 +468,10 @@ int main() {
         //---------------------------------------------------------------Choosing lines which are smaller-------------------------------------
         double distanceThreshold = 2.0; // adjust this threshold= best =2
         filterLines(lines, distanceThreshold);
+
+
+
+
 
 //{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
         //------------------------------------------------------to check merging--------------------------------
