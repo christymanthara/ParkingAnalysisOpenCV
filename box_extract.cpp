@@ -318,101 +318,153 @@ Point findmidpoint(Vec4f line)
     return midpoint;
 }
 
-Mat constructRectangles( Mat image, vector<Vec4f> lines ,int distanceParallelThreshold)
-{   vector<bool> isPaired(lines.size(), false);
-    vector<bool> left_first(lines.size(), false);
-    
+Mat constructRectangles(Mat image, vector<Vec4f> lines, int distanceParallelThreshold) 
+{
+    vector<bool> isPaired(lines.size(), false); // Initialize to track if the line is making box1
+    vector<bool> isPaired2(lines.size(), false); // Initialize to track which lines is making box2
+    vector<bool> left_first(lines.size(), false); //initialize to track if the line is the first left line
+
     int smallestXIndex = -1;
     float smallestX = numeric_limits<float>::max();
 
+    //Find the leftmost line
     for (size_t i = 0; i < lines.size(); i++) 
     {
         if (lines[i][0] < smallestX) 
         {
             smallestX = lines[i][0];
-             smallestXIndex = i;
+            smallestXIndex = i;
         }
     }
 
-    if(smallestXIndex != -1)
-        {
-            left_first[smallestXIndex] = true; // making the smallest left index into true so that you know which line is the top most one
-        }
+    if (smallestXIndex != -1)
+    {
+        left_first[smallestXIndex] = true; // Mark the smallest left index as true (this is the topmost line)
+    }
 
-    
-
+   
     for (size_t i = 0; i < lines.size(); i++) 
     {
-        int count =0;
+        int count = 0; 
+        Vec4f l1 = lines[i];  // Get the first line
+        float angle1 = findAngle(l1);
+        
 
-
-        if (left_first[i]==true ) 
-        {
-            count++;    //if the count is 1 then you are at the top most line
-            
-        }
-
-    Vec4f l1 = lines[i];
-    float angle1 = findAngle(l1);
-
-    //flip the line coordinates if the angle is negative
-    if (angle1 < 0) {
+        // Flip the line coordinates if the angle is negative
+        if (angle1 < 0) {
             swap(l1[0], l1[2]);
             swap(l1[1], l1[3]);
-            // angle1 = -angle1; // Making the angle positive
         }
 
-    for (size_t j = i + 1; j < lines.size(); j++) {
-        // if (isPaired[j]) continue;
-        Vec4f l2 = lines[j];
-        float angle2 = findAngle(l2);
+        if (left_first[i] == true) //checking if the left most line that is the first line
+        { //for the first line we are giving both the boxing
+            count=1;
+            isPaired[i]=true; 
+            isPaired2[i]=true;
+            Point p1(l1[0], l1[1]);  // Starting point of the first line
+            Point p2(l1[2], l1[3]);
+            // line(image, p1,p2,Scalar(155, 155, 200), 2, LINE_AA);//first line identification perfect
+        }
 
-        if (angle2 < 0) {
+
+        //-------------------------------------------setting up the box variables---------------------------------------------
+        if(isPaired[i]== true && isPaired2[i] ==true && left_first[i]!=true) //line has already been drawn into 2 boxes
+        {
+            continue;
+        } 
+
+        if (isPaired[i]==true){ //if one box is marked and the other is not marked,mark it
+                        isPaired2[i]=true;
+                        break;
+                    }
+        else if(isPaired2[i]==true)
+        {
+        isPaired[i]=true;
+        }
+        else{
+            isPaired[i]=true; 
+        }
+        //--------------------------------------------------------------------------------------------------------------------
+
+        
+
+         // To count how many boxes have been drawn
+
+        for (size_t j = 0; j < lines.size(); j++) 
+        {
+            if (i == j || left_first[j]==true) continue;  // Skip if the line is the same or is the first line
+
+            Vec4f l2 = lines[j];  // Get the second line
+            float angle2 = findAngle(l2);
+
+            // Flip the second line if its angle is negative
+            if (angle2 < 0) {
                 swap(l2[0], l2[2]);
                 swap(l2[1], l2[3]);
-                angle2 = -angle2; // Making the angle2 positive
+                angle2 = -angle2;
             }
 
-        // Check if l1 and l2 are nearly parallel (angle difference is small)
-        if (fabs(angle1 - angle2) < 5) 
-        {
-        
-            Point midpoint1((l1[0] + l1[2]) / 2, (l1[1] + l1[3]) / 2); //finding the midpoint of the 2 parallel lines 
-            Point midpoint2((l2[0] + l2[2]) / 2, (l2[1] + l2[3]) / 2);
-            double distance = pointDistance(midpoint1, midpoint2);
-
-            if (distance < distanceParallelThreshold && distance > 5 ) 
-            {
-
-                cout<<"now here";
-                // We found two parallel lines that are close together.
-                // Now, calculate the four corner points of the rectangle.
-
-                Point p1(l1[0], l1[1]); // Starting point of the first line
-                Point p2(l1[2], l1[3]); // Ending point of the first line
-                Point p3(l2[0], l2[1]); // Starting point of the second line
-                Point p4(l2[2], l2[3]); // Ending point of the second line
-
-                // Draw a rectangle using these four points
-                line(image, p1, p3, Scalar(255, 255, 0), 2, LINE_AA); // Connect the start points
-                line(image, p2, p4, Scalar(255, 255, 0), 2, LINE_AA); // Connect the end points
-                line(image, p1, p2, Scalar(255, 255, 0), 2, LINE_AA); // Line along l1
-                line(image, p3, p4, Scalar(255, 255, 0), 2, LINE_AA); // Line along l2
-
-               
-
-                putText(image, "Rectangle", midpoint1, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
-                // isPaired[i] = true;
-                // isPaired[j] = true;
-                count++;
-
-                if (count>=1)
-                    break;
+            // Check if the two lines are nearly parallel (angle difference is small)
+            if (fabs(angle1 - angle2) < 5) 
+            {   
 
                 
-                // break; //breaking after finding a pair for l1
+
+
+
+
+                // Check if the second line is directly under the first one
+                Point midpoint1((l1[0] + l1[2]) / 2, (l1[1] + l1[3]) / 2);
+                Point midpoint2((l2[0] + l2[2]) / 2, (l2[1] + l2[3]) / 2);
+                double distance = pointDistance(midpoint1, midpoint2);
+
+
+                if (distance < distanceParallelThreshold) 
+                // if (distance < distanceParallelThreshold && midpoint2.y > midpoint1.y) 
+                {
+                    // We found a pair of parallel lines that are close together and under each other
+                    Point p1(l1[0], l1[1]);  // Starting point of the first line
+                    Point p2(l1[2], l1[3]);  // Ending point of the first line
+                    Point p3(l2[0], l2[1]);  // Starting point of the second line
+                    Point p4(l2[2], l2[3]);  // Ending point of the second line
+
+                    double deltaY_start = p3.y - p1.y;
+                    double deltaX_start = p3.x - p1.x;
+                    double angleleft = atan2(deltaY_start, deltaX_start) * 180 / CV_PI + 180;
+
+                    double deltaY_end = p4.y - p2.y;
+                    double deltaX_end = p4.x - p2.x;
+                    double angleright = atan2(deltaY_end, deltaX_end) * 180 / CV_PI + 180;     
+
+                    Point midpointl((l1[0] + l2[0]) / 2, (l1[1] + l2[1]) / 2);
+                    Point midpointr((l1[2] + l2[2]) / 2, (l1[3] + l2[3]) / 2); 
+
+                    // Draw the rectangle using these four points
+                    line(image, p1, p3, Scalar(255, 255, 0), 2, LINE_AA); // Connect the start points
+                    line(image, p2, p4, Scalar(255, 255, 0), 2, LINE_AA); // Connect the end points
+                    line(image, p1, p2, Scalar(255, 255, 0), 2, LINE_AA); // Line along l1
+                    line(image, p3, p4, Scalar(255, 255, 0), 2, LINE_AA); // Line along l2
+
+                    //finding the angle formed by the new parallel lines connectng the lines up and below
+                    putText(image, "Rectangle", midpoint1, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
+                    putText(image, format("The angle is %.2f", angleleft), midpointl, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
+                    putText(image, format("The angle is %.2f", angleright), midpointr, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
+
+                    if (isPaired[i]==true){ //if one box is marked and the other is not marked mark both
+                        isPaired2[i]=true;
+                        break;
+                    }
+                    else if(isPaired2[i]==true){
+                        isPaired[i]=true;
+                    }
+                    
+
+                    
+
+                    // If a pair is found, break and start the next iteration
+                    // break;
+                }
             }
-        }
         }
     }
 
@@ -445,7 +497,7 @@ int main() {
 
         // cv::imshow(filename, image);
         
-        imshow("image" + to_string(i),image);
+        // imshow("image" + to_string(i),image);
 
         Mat masked;
 
@@ -459,7 +511,7 @@ int main() {
         float gamma = 3.0; //3.2
         cv::Mat gammaresult;
         gammaCorrection(masked, gammaresult, gamma);
-        imshow("Gamma corrected image"+ to_string(i), gammaresult); 
+        // imshow("Gamma corrected image"+ to_string(i), gammaresult); 
 
         //----------------------------------------------------------------trying MSER---------------------------------------------
         // applyMSER(gammaresult,i);
@@ -468,23 +520,23 @@ int main() {
         //make into gray
         Mat gray;
         cvtColor(gammaresult, gray, COLOR_BGR2GRAY);
-        imshow("gray"+ to_string(i), gray);
+        // imshow("gray"+ to_string(i), gray);
         
         //-------------------------------------------------------applying morphological operation-----------------------------------
         morphologyEx( gray, final,MORPH_GRADIENT, Mat());
-        imshow("Morph gradient image" + to_string(i),final);
+        // imshow("Morph gradient image" + to_string(i),final);
 
         
         //-----------------------------------------------------------------applying thresholding------------------------------------
         Mat thresh;
         threshold(final, thresh, 180, 200, THRESH_BINARY + THRESH_OTSU); 
-        imshow("Thresh lines"+ to_string(i), thresh);
+        // imshow("Thresh lines"+ to_string(i), thresh);
 
         //-----------------------------------------------------------------Canny edge detector-----------------------------------------
         // Apply Canny edge detector
         Mat edges;
         Canny(thresh, edges, 80, 150, 3); 
-        imshow("Canny Image"+ to_string(i), edges);
+        // imshow("Canny Image"+ to_string(i), edges);
 
 
         //-----------------------------------------------------------------Finding Contours--------------------------------------------
@@ -501,7 +553,7 @@ int main() {
          drawContours(contourImg, contours, (int)i, color, 2, LINE_8, hierarchy, 0); //uncomment to draw
         
     }
-    imshow("Contour Image"+ to_string(i), contourImg);
+    // imshow("Contour Image"+ to_string(i), contourImg);
 
         //-----------------------------------------------------------------Hough transform---------------------------------------------
         vector<Vec4f> lines;
@@ -535,7 +587,7 @@ int main() {
         //----------    --------------------------plotting the midpoint and writing the point-------------------------------------------------
         Point midpoint((l[0] + l[2]) / 2, (l[1] + l[3]) / 2);
 
-        double distanceThreshold = 15.0;
+        double distanceThreshold = 20.0; //15
         double angleThreshold = 10.0;
         //=============================================Finding lines that are close to each other====================================================
         Vec4f l1 = lines[i];
@@ -692,7 +744,7 @@ int main() {
 
         }
         imshow("Detected White Lines and Merged", randomcolored);
-        int parallelthreshold = 200;
+        int parallelthreshold = 50;
         Mat filteredRect = constructRectangles(randomcolored,filteredLines, parallelthreshold);
     
 
