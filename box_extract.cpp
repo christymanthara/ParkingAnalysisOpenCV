@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <opencv2/opencv.hpp>
 #include <cmath>
+#include "utilities.hpp"
 
 namespace fs = std::filesystem;
 using namespace std;
@@ -17,145 +18,6 @@ std::vector<cv::Point> polygon_corners;
 Mat extImage;
 RNG rnc;
 
-static Mat CannyThreshold(Mat img)
-{
-
-//step1: grayscale
-cvtColor(img,grayImage, COLOR_BGR2GRAY);
-
-//step2: we apply gaussian blur
-GaussianBlur( grayImage, bluredImage, Size( 3,3), 0, 0 );
-
-//step3:Apply Canny edge detection
-// Canny( bluredImage, detected_edges, lowThreshold, lowThreshold*3, kernel_size );
-
-Canny( bluredImage, detected_edges, lowThreshold, lowThreshold*3);
-
-return detected_edges;
-}
-
-
-static Mat masking(Mat image,int i) //works perfectly
-{
-    Mat masked_image;
-
-    //create a black image of the same size as the original image
-        Mat blackimg = Mat::zeros(image.size(),CV_8UC1);
-        // imshow("Blackimage" + to_string(i),blackimg);
-
-    //taking the polygon area (hard coding)
-        polygon_corners.push_back(cv::Point(243, 46));  
-        polygon_corners.push_back(cv::Point(649, 705)); 
-        polygon_corners.push_back(cv::Point(911, 596)); 
-        polygon_corners.push_back(cv::Point(412, 19));  
-        
-
-        fillPoly(blackimg, polygon_corners, Scalar(255, 255, 255)); //fill the mask with white
-        // imshow("Blackimage filled" + to_string(i),blackimg);
-
-        //applyinng the mask to the original image
-        bitwise_and(image,image,masked_image,blackimg);
-        // imshow("And Mask Applied" + to_string(i),masked_image);
-        // bitwise_not(image,masked_image,blackimg);
-        // imshow("Not Mask Applied" + to_string(i),masked_image); //using the not mask also removes the white lines into black
-
-        return masked_image;
-        
-}
-
-static Mat findlines(Mat img,int i)
-{
-    Mat finallines,grayImage;
-    
-    //step1: convert to grayscale 
-    cvtColor(img, grayImage, COLOR_BGR2GRAY);
-    imshow("Grayimage" + to_string(i),grayImage);
-    // Step 2: applying threshhold
-    threshold(grayImage, grayImage,130 , 255, cv::THRESH_BINARY); 
-    // Step 3: bluring
-    medianBlur(grayImage,grayImage,5);
-    imshow("gray blur image",grayImage);
-
-
-    grayImage.copyTo(finallines);
-    return finallines;
-
-}
-
-static Mat applyMSER(Mat img, int i)
-{
-        Mat output(img.size(),CV_8UC3);
-        output = cv::Scalar(255,255,255);
-        // cvtColor(img,img, COLOR_BGR2GRAY);
-        vector<std::vector<cv::Point>> mpoints;
-        std::vector< Rect > bboxes;
-        //detect MSER features
-        //using MSER
-        Ptr<MSER> mser;
-        mser = cv::MSER::create(5,800,8000,0.2,5,1000);//15,1000,8000,0.5,0.5,1000
-        mser->detectRegions(img,mpoints,bboxes);
-
-        //drawing the detected regions
-        for (size_t i = 0; i < bboxes.size(); i++) {
-        rectangle(img, bboxes[i], Scalar(0, 255, 0));  // Draw rectangle around the detected region
-        }
-        for (size_t i = 0; i < mpoints.size(); i++) {
-        polylines(img, mpoints[i], true, Scalar(0, 255, 0), 2);
-        }
-        //drawing with random colors
-        RNG rng;
-        for(vector<vector<Point>>::iterator it=mpoints.begin();it!=mpoints.end();++it)
-        {
-            //generating random color
-            cv::Vec3b c(rng.uniform(0,255),rng.uniform(0,255),rng.uniform(0,255));
-
-            //for each point in MSER set
-            for (auto itPts = it->begin(); itPts != it->end(); ++itPts) {
-            // If the point is part of the foreground (white in grayscale, for example)
-            // we color it with the random color
-            output.at<Vec3b>(*itPts) = c;
-        }
-
-
-        }
-
-
-
-
-        // Display the image with detected regions
-        imshow("MSER Regions"+ to_string(i), img);
-        imshow("MSER Regions with random colors"+ to_string(i), output);
-return img;
-
-}
-
-
-void sobelApplied(Mat img)
-{
-    Mat sobelx, sobely, sobelxy;
-    Sobel(img, sobelx, CV_64F, 1, 0, 5);
-    Sobel(img, sobely, CV_64F, 0, 1, 5);
-    Sobel(img, sobelxy, CV_64F, 1, 1, 5);
-
-    // Display Sobel edge detection images
-    imshow("Sobel X", sobelx);
-    
-    imshow("Sobel Y", sobely);
- 
-    imshow("Sobel XY using Sobel() function", sobelxy);
-    
-
-
-}
-
-void gammaCorrection(const cv::Mat& src, cv::Mat& dst, float gamma) {
-    CV_Assert(gamma >= 0);
-    cv::Mat lut(1, 256, CV_8UC1);
-    for (int i = 0; i < 256; i++) {
-        lut.at<uchar>(i) = cv::saturate_cast<uchar>(pow(i / 255.0, gamma) * 255.0);
-    }
-    cv::LUT(src, lut, dst);
-}
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------
 // Helper function to calculate the distance between two points
@@ -172,25 +34,25 @@ double lineLength(Vec4i line) {
 
 // Function to find the distance between two lines (shortest distance between endpoints)
 double lineDistance(Vec4i line1, Vec4i line2) {
-    Point p1(line1[0], line1[1]);
-    Point p2(line1[2], line1[3]);
-    Point p3(line2[0], line2[1]);
-    Point p4(line2[2], line2[3]);
+    Point p1(line1[0], line1[1]); //starting point line 1
+    Point p2(line1[2], line1[3]); //ending point line 1
+    Point p3(line2[0], line2[1]); //starting point line 2
+    Point p4(line2[2], line2[3]); //ending point line 2
 
     // Calculate all possible endpoint-to-endpoint distances
-    // double d1 = pointDistance(p1, p3);
+    double d1 = pointDistance(p1, p3);
     double d2 = pointDistance(p1, p4);
-    // double d3 = pointDistance(p2, p3);
+    double d3 = pointDistance(p2, p3);
     double d4 = pointDistance(p2, p4);
 
     // Return the minimum distance
-    // return min({d1, d3});
-    return min({d2, d4});
+    return min({d1, d3});
+    // return min({d2, d4});
 }
 
 // Function to filter lines based on distance and keep the shorter one
-void filterLines(vector<Vec4f>& lines, double distanceThreshold) {
-    vector<Vec4f> filteredLines;
+void filterLines(vector<Vec4i>& lines, double distanceThreshold) {
+    vector<Vec4i> filteredLines;
     vector<bool> keep(lines.size(), true); // Initially keep all lines
 
     for (size_t i = 0; i < lines.size(); i++) {
@@ -263,7 +125,7 @@ bool checkCloseAndCollinear(const Vec4f& l1, const Vec4f& l2, float angleThresho
 }
 
 // Merge two lines into a single line by connecting the farthest points
-Vec4f mergeLines(const Vec4f& l1, const Vec4f& l2) {
+Vec4f mergeLines(const Vec4i& l1, const Vec4i& l2) {
     Point p1_start(l1[0], l1[1]);
     Point p1_end(l1[2], l1[3]);
     Point p2_start(l2[0], l2[1]);
@@ -286,14 +148,14 @@ Vec4f mergeLines(const Vec4f& l1, const Vec4f& l2) {
         }
     }
 
-    return Vec4f(start.x, start.y, end.x, end.y);
+    return Vec4i(start.x, start.y, end.x, end.y);
 }
 
 // Recursive function to merge lines that are close and collinear
-void recursiveMerge(Vec4f& currentLine, vector<Vec4f>& lines, vector<bool>& merged, float angleThreshold, double distanceThreshold) {
+void recursiveMerge(Vec4i& currentLine, vector<Vec4i>& lines, vector<bool>& merged, float angleThreshold, double distanceThreshold) {
     for (size_t i = 0; i < lines.size(); i++) {
         if (!merged[i]) {
-            Vec4f nextLine = lines[i];
+            Vec4i nextLine = lines[i];
 
             if (checkCloseAndCollinear(currentLine, nextLine, angleThreshold, distanceThreshold)) {
                 double llength = lineLength(currentLine);
@@ -312,17 +174,18 @@ void recursiveMerge(Vec4f& currentLine, vector<Vec4f>& lines, vector<bool>& merg
     }
 }
 
-Point findmidpoint(Vec4f line)
+Point findmidpoint(Vec4i line)
 {
     Point midpoint((line[0] + line[2]) / 2, (line[1] + line[3]) / 2);
     return midpoint;
 }
 
-Mat constructRectangles(Mat image, vector<Vec4f> lines, int distanceParallelThreshold) 
+Mat constructRectangles(Mat image, vector<Vec4i> lines, int distanceParallelThreshold) 
 {
     vector<bool> isPaired(lines.size(), false); // Initialize to track if the line is making box1
     vector<bool> isPaired2(lines.size(), false); // Initialize to track which lines is making box2
     vector<bool> left_first(lines.size(), false); //initialize to track if the line is the first left line
+    vector<int> count(lines.size());
 
     int smallestXIndex = -1;
     float smallestX = numeric_limits<float>::max();
@@ -339,15 +202,16 @@ Mat constructRectangles(Mat image, vector<Vec4f> lines, int distanceParallelThre
 
     if (smallestXIndex != -1)
     {
-        left_first[smallestXIndex] = true; // Mark the smallest left index as true (this is the topmost line)
+        left_first[smallestXIndex] = true; // Mark the smallest left index as true (this is the topmost line) //working checked
     }
 
-   
+   //nesting and computing
     for (size_t i = 0; i < lines.size(); i++) 
     {
-        int count = 0; 
+        count[i] = 0; 
         Vec4f l1 = lines[i];  // Get the first line
         float angle1 = findAngle(l1);
+        
         
 
         // Flip the line coordinates if the angle is negative
@@ -358,11 +222,12 @@ Mat constructRectangles(Mat image, vector<Vec4f> lines, int distanceParallelThre
 
         if (left_first[i] == true) //checking if the left most line that is the first line
         { //for the first line we are giving both the boxing
-            count=1;
+            // count=1;
             isPaired[i]=true; 
             isPaired2[i]=true;
-            Point p1(l1[0], l1[1]);  // Starting point of the first line
-            Point p2(l1[2], l1[3]);
+            count[i] = 2; 
+            // Point p1(l1[0], l1[1]);  // Starting point of the first line
+            // Point p2(l1[2], l1[3]);
             // line(image, p1,p2,Scalar(155, 155, 200), 2, LINE_AA);//first line identification perfect
         }
 
@@ -375,20 +240,29 @@ Mat constructRectangles(Mat image, vector<Vec4f> lines, int distanceParallelThre
 
         if (isPaired[i]==true){ //if one box is marked and the other is not marked,mark it
                         isPaired2[i]=true;
-                        break;
+                        // break;
+                        count[i]++; //count update
                     }
-        else if(isPaired2[i]==true)
+        else if(isPaired2[i]==true) //not needed i think
         {
-        isPaired[i]=true;
+            isPaired[i]=true;
+            count[i]++; //count update
         }
         else{
             isPaired[i]=true; 
+            count[i]++; //count update
         }
         //--------------------------------------------------------------------------------------------------------------------
 
+
+        Vec4f closestLine;
+        double closeDist = numeric_limits<double>::max();
+        size_t closestLineIndex = -1;
+        Point currentmidpoint = findmidpoint(l1);
         
 
          // To count how many boxes have been drawn
+
 
         for (size_t j = 0; j < lines.size(); j++) 
         {
@@ -397,6 +271,8 @@ Mat constructRectangles(Mat image, vector<Vec4f> lines, int distanceParallelThre
             Vec4f l2 = lines[j];  // Get the second line
             float angle2 = findAngle(l2);
 
+            // double closeDistance = numeric_limits<double>::max();
+
             // Flip the second line if its angle is negative
             if (angle2 < 0) {
                 swap(l2[0], l2[2]);
@@ -404,13 +280,27 @@ Mat constructRectangles(Mat image, vector<Vec4f> lines, int distanceParallelThre
                 angle2 = -angle2;
             }
 
-            // Check if the two lines are nearly parallel (angle difference is small)
-            if (fabs(angle1 - angle2) < 5) 
+            if (fabs(angle1 - angle2) < 5) // Check if the two lines are nearly parallel (angle difference is small)
             {   
 
-                
+            //finding the midpoint of the second line
+            Point closemidpoint = findmidpoint(l2);
 
+            double mindist = pointDistance(currentmidpoint,closemidpoint);
 
+            if (mindist < closeDist && isPaired[j]!=true && isPaired2[j]!=true) 
+            {
+                closeDist = mindist;
+                closestLine = l2;
+                closestLineIndex = j;
+            }
+            }
+        }
+            
+            
+                if (closestLineIndex != -1) 
+                {
+                Vec4f l2 = closestLine;
 
 
                 // Check if the second line is directly under the first one
@@ -419,9 +309,9 @@ Mat constructRectangles(Mat image, vector<Vec4f> lines, int distanceParallelThre
                 double distance = pointDistance(midpoint1, midpoint2);
 
 
-                if (distance < distanceParallelThreshold) 
-                // if (distance < distanceParallelThreshold && midpoint2.y > midpoint1.y) 
-                {
+                // if (distance < distanceParallelThreshold) 
+                // // if (distance < distanceParallelThreshold && midpoint2.y > midpoint1.y) 
+                // {
                     // We found a pair of parallel lines that are close together and under each other
                     Point p1(l1[0], l1[1]);  // Starting point of the first line
                     Point p2(l1[2], l1[3]);  // Ending point of the first line
@@ -450,13 +340,23 @@ Mat constructRectangles(Mat image, vector<Vec4f> lines, int distanceParallelThre
                     putText(image, format("The angle is %.2f", angleleft), midpointl, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
                     putText(image, format("The angle is %.2f", angleright), midpointr, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
 
-                    if (isPaired[i]==true){ //if one box is marked and the other is not marked mark both
-                        isPaired2[i]=true;
-                        break;
+                    // if(angleleft > && angleleft < && angleright > && angleright <  )
+
+
+                    count[closestLineIndex]++;
+                    if (isPaired[i]==true){ //if one box is marked and the other is not marked then mark secoond line of the box
+                        isPaired2[i]=true; //nesting
+                        if(isPaired[closestLineIndex]==true)
+                            isPaired2[closestLineIndex]=true;
+                        else if(isPaired[closestLineIndex]!=true)
+                            isPaired[closestLineIndex]=true;
+                            
+                        //break;
                     }
-                    else if(isPaired2[i]==true){
-                        isPaired[i]=true;
-                    }
+                    // else if(isPaired[i]==true){
+                    //     isPaired[i]=true;
+                        
+                    // }
                     
 
                     
@@ -465,14 +365,20 @@ Mat constructRectangles(Mat image, vector<Vec4f> lines, int distanceParallelThre
                     // break;
                 }
             }
-        }
-    }
+        
+    
 
 // cout<<"now here";
-    imshow("rectangles",image);
+    imshow("rectangles drawn",image);
     return image;
     
 }
+
+//{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
+
+
+
+
 
 
 
@@ -556,17 +462,20 @@ int main() {
     // imshow("Contour Image"+ to_string(i), contourImg);
 
         //-----------------------------------------------------------------Hough transform---------------------------------------------
-        vector<Vec4f> lines;
+        vector<Vec4i> lines;
         HoughLinesP(edges, lines, 1, CV_PI / 180, 20, 10, 7);
 
 
+   
+
 
         //---------------------------------------------------------------Choosing lines which are smaller-------------------------------------
-        double distanceThreshold = 2.0; // adjust this threshold
+        double distanceThreshold = 2.0; // adjust this threshold= best =2
         filterLines(lines, distanceThreshold);
 
+//{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
         //------------------------------------------------------to check merging--------------------------------
-        vector<Vec4f> mergedLines;  // for storing the merged lines
+        vector<Vec4i> mergedLines;  // for storing the merged lines
         vector<bool> merged(lines.size(), false);
         //---------------------------------------------------------------------------------------------------------                    
         // Draw the detected lines on the original image
@@ -587,10 +496,10 @@ int main() {
         //----------    --------------------------plotting the midpoint and writing the point-------------------------------------------------
         Point midpoint((l[0] + l[2]) / 2, (l[1] + l[3]) / 2);
 
-        double distanceThreshold = 20.0; //15
+        double distanceThreshold = 15.0; //15
         double angleThreshold = 10.0;
         //=============================================Finding lines that are close to each other====================================================
-        Vec4f l1 = lines[i];
+        Vec4i l1 = lines[i];
         Point midpoint1((l1[0] + l1[2]) / 2, (l1[1] + l1[3]) / 2); //midpoint of line1
 
         // double llength = lineLength(l1);
@@ -599,7 +508,7 @@ int main() {
         //applying recursive merging
 
         if (!merged[i]) {
-            Vec4f currentLine = lines[i];  // Start with an unmerged line
+            Vec4i currentLine = lines[i];  // Start with an unmerged line
 
             // Recursively merge lines that are close and collinear
             recursiveMerge(currentLine, lines, merged, angleThreshold, distanceThreshold);
@@ -614,108 +523,18 @@ int main() {
         }
 
 
-        
 
-                            
-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        //---------------------------------------------fine tuning to remove the unwanted lines and displaying original lines--------------------------------------------------
-        // for (size_t j = i + 1; j < lines.size(); j++) 
-        //  {
-        //                     // Vec4f l2 = lines[j];
-        
-        //                     // if (length>=15)
-        //                     // {
-                                
-        //                     // line(image, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0, 0, 255), 3, LINE_AA);
-
-        //                     // putText(image, format("%.2f", length), midpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 0, 0), 1, LINE_AA);
-        //                     // }
-
-
-        //                     Vec4f l2 = lines[j];
-                            
-        //                     Point midpoint2((l2[0] + l2[2]) / 2, (l2[1] + l2[3]) / 2); //midpoint of line2
-
-        //                     double distance = sqrt(pow(midpoint2.x - midpoint1.x, 2) + pow(midpoint2.y - midpoint1.y, 2)); //distance between the 2 midpoints
-            
-        //                     if (length>=15 && distance<distanceThreshold)
-        //                     {
-                                
-                                
-
-        //                             //for drawing the lines with the random colors
-                            
-        //                             cv::Vec3b c(rnc.uniform(0,255),rnc.uniform(0,255),rnc.uniform(0,255)); //generating a random color
-        //                              line(image, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0, 0, 255), 3, LINE_AA);
-
-        //                              putText(image, format("%.2f", length), midpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 0, 0), 1, LINE_AA);
-                                    
-        //                              //draw the lines in random colors as pairs
-                                     
-
-        //                              //line(randomcolored, Point(l1[0], l1[1]), Point(l1[2], l1[3]), c, 3, LINE_AA);
-        //                              //line(randomcolored, Point(l2[0], l2[1]), Point(l2[2], l2[3]), c, 3, LINE_AA);
-        //                             // imshow("Detected White Line Pairs in random color", randomcolored);
-
-        //                             //combining the pairs into a single line
-        //                             line(randomcolored, Point((l1[0]+l2[0])/2,(l1[1]+l2[1])/2),Point((l1[2]+l2[2])/2,(l1[3]+l2[3])/2), Scalar(0,0,255),2);
-                                     
-
-                                     
-                                
-                           
-
-        //                     }
-                            
-                            
-                            
-        //                     //----------------------------------------doubling the length of the detected lines---------------------------------------------------
-        //                     //using the equation of the slope and finding the coordinates
-        //                     if (dx==0)
-        //                     {
-        //                         continue;
-        //                     }
-        //                     double slope =0;
-        //                     slope = (dy/dx)* 180.0 / CV_PI;
-        //                     if(slope<0)
-        //                         slope = slope+360;
-                            
-
-        //                     //-------------------------------------------------alternative approach using the midpoint theorem to double the length-----------------------------------------------
-        //                     int new_x2 = (2* (l1[2]-l1[0])) + l1[0];
-        //                     int new_y2 = (2* (l1[3]-l1[1])) + l1[1];
-
-        //                     Point newpoint(new_x2, new_y2);
-
-
-        //                     //---------------------------------------------fine tuning to remove the unwanted lines and displaying the new lines--------------------------------------------------
-        //                     // if (length>=15 && angle>= 70 && angle<= 85) //filtering lines by the 
-        //                     if (length>=15 )
-        //                     {
-        //                         // if(slope>=50 && slope<=83)
-        //                         {
-
-                                
-                            
-        //                         putText(extImage, format("%.2f", length), newpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 255), 1, LINE_AA);
-        //                         putText(extImage, format("The angle is %.2f", angle), midpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
-                            
-                            
-                            
-        //                         line(extImage, Point(l[0], l[1]), Point(new_x2, new_y2), Scalar(0, 255, 0), 1, LINE_AA);
-                            
-
-
-        //                         }
-        //                     }
-        //  }
-
-        //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         }
-        vector<Vec4f> filteredLines;
+
+
+
+        
+        
+
+        vector<Vec4i> filteredLines;
         //-------------------------------------------------------printing the recursively merged lines
         for (size_t i = 0; i < mergedLines.size(); i++) {
-        Vec4f l = mergedLines[i];
+        Vec4i l = mergedLines[i];
         float angle;
         int dy=l[3] - l[1];
         int dx=l[2] - l[0];
@@ -744,7 +563,7 @@ int main() {
 
         }
         imshow("Detected White Lines and Merged", randomcolored);
-        int parallelthreshold = 50;
+        int parallelthreshold = 200;
         Mat filteredRect = constructRectangles(randomcolored,filteredLines, parallelthreshold);
     
 
@@ -753,10 +572,11 @@ int main() {
     imshow("Extended White Lines", extImage);
 
     // imshow("Detected White Lines and Merged", randomcolored);
-    imshow("Filtered Rectangles", filteredRect);
+    // imshow("Filtered Rectangles", filteredRect);
 
         
 
+        
         
 
         
@@ -767,27 +587,7 @@ int main() {
 
         gammaresult.copyTo(mserimg); 
 
-        // mserimg = applyMSER(mserimg,i);
-
-        // vector<vector<Point>> contours;
-        // vector<Vec4i> hierarchy;
-        //finding contours of mserimg
-        // findContours(mserimg, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
-        // //drawing the contours finally
-        // for (size_t i = 0; i < contours.size(); i++) 
-        // {
-        // Scalar color = Scalar(0, 255, 0); // Green 
-        // drawContours(mserimg, contours, (int)i, color, 2, LINE_8, hierarchy, 0);
-        // }
-
-        // imshow("Contours in mserimg", mserimg);
-
-        
-        // image.copyTo(masked);
-
-        // morphologyEx( final, final, MORPH_CLOSE, cv::getStructuringElement(MORPH_RECT,Size(5,5) )); 
-
-        //detecting edges using the morphological operators
+   
 
         cvtColor(masked,masked, COLOR_BGR2GRAY);
         // GaussianBlur( masked, masked, Size( 3,3), 0, 0 );
