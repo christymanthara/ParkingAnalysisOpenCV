@@ -409,10 +409,26 @@ int main() {
         Mat randomcolored;
         image.copyTo(randomcolored);
 
-        //----------------------------------------------------------------gamma correction--------------------------------------
+        //------------------------------------------------------------trying with XYZ---------------------------------------
+        Mat imgxyz;
+        cvtColor(image, imgxyz, COLOR_BGR2XYZ);
+        imshow("colorxyz"+ to_string(i), imgxyz);
+        
+        // ------------------------------------------------------applying masking to the image------------------------------
+        masked = masking(imgxyz,i);
+        //
         float gamma = 3.0; //3.2
         cv::Mat gammaresult;
         gammaCorrection(masked, gammaresult, gamma);
+        imshow("Gamma corrected "+ to_string(i), gammaresult); 
+
+
+
+
+        //----------------------------------------------------------------gamma correction--------------------------------------
+        // float gamma = 3.0; //3.2
+        // cv::Mat gammaresult;
+        // gammaCorrection(masked, gammaresult, gamma);
         // imshow("Gamma corrected image"+ to_string(i), gammaresult); 
 
         //----------------------------------------------------------------trying MSER---------------------------------------------
@@ -437,14 +453,14 @@ int main() {
         //-----------------------------------------------------------------Canny edge detector-----------------------------------------
         // Apply Canny edge detector
         Mat edges;
-        Canny(thresh, edges, 80, 150, 3); 
+        Canny(thresh, edges, 80, 150, 5, true); 
         // imshow("Canny Image"+ to_string(i), edges);
 
 
         //-----------------------------------------------------------------Finding Contours--------------------------------------------
         vector<vector<Point>> contours;
         vector<Vec4i> hierarchy;
-        // findContours(edges, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
+        findContours(edges, contours, hierarchy, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
 
         //---------------------------------------------------------------drawing the contours-----------------------------------------
         Mat contourImg;
@@ -452,10 +468,10 @@ int main() {
         for (size_t i = 0; i < contours.size(); i++) {
         Scalar color = Scalar(0, 255, 0); // Green color for contours
 
-         drawContours(contourImg, contours, (int)i, color, 2, LINE_8, hierarchy, 0); //uncomment to draw
+        drawContours(contourImg, contours, (int)i, color, 2, LINE_8, hierarchy, 0); //uncomment to draw
         
     }
-    // imshow("Contour Image"+ to_string(i), contourImg);
+    imshow("Contour Image"+ to_string(i), contourImg);
 
         //-----------------------------------------------------------------Hough transform---------------------------------------------
         vector<Vec4i> lines;
@@ -557,6 +573,13 @@ int main() {
         filteredLines.push_back(l);
         }
         }
+
+
+        //{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{alternate: userotatedrect}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
+
+        
+
+
 
 //==============================================================draw parallel lines into rectangles======================================================
 

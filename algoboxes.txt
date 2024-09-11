@@ -24,4 +24,11 @@ ALgo for the boxing.
 2.find the line below it and compare their lengths.
     if the length of either is smaller than 80 percent of the other, make it 80 percent of the other.
 
+
+Using rotated rectangles
+--------------------------------------------------
+find the edges of the lines using the contours
+find rotatedrectangles that fit inbetween these lines
+sort them by area
+
      

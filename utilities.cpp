@@ -10,6 +10,7 @@ using namespace cv;
 
 // Mat extImage;
 // RNG rnc;
+Mat rotrectoutput;
 
 
 //this is the header file for the fucntion definitions
@@ -155,3 +156,7 @@ void gammaCorrection(const cv::Mat& src, cv::Mat& dst, float gamma) {
     }
     cv::LUT(src, lut, dst);
 }
+
+
+
+
