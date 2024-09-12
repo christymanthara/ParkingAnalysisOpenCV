@@ -90,14 +90,14 @@ void filterLines(vector<Vec4i>& lines, double distanceThreshold) {
 }
 
 
-float findLineAngle(const Vec4f& line) {
+float findLineAngle(const Vec4i& line) {
     int dx = line[2] - line[0];
     int dy = line[3] - line[1];
     return (atan2(dy, dx) * 180.0 / CV_PI +180);
 
 }
 
-float findAngle(const Vec4f& line) {
+float findAngle(const Vec4i& line) {
     int dx = line[2] - line[0];
     int dy = line[3] - line[1];
     return (atan2(dy, dx) * 180.0 / CV_PI );
@@ -105,7 +105,7 @@ float findAngle(const Vec4f& line) {
 }
 
 //------------------------------------------------------------checking close and collinearity-------------------------------------------------
-bool checkCloseAndCollinear(const Vec4f& l1, const Vec4f& l2, float angleThreshold, double distanceThreshold) {
+bool checkCloseAndCollinear(const Vec4i& l1, const Vec4i& l2, float angleThreshold, double distanceThreshold) {
     float angle1 = findLineAngle(l1);
     float angle2 = findLineAngle(l2);
     
@@ -125,7 +125,7 @@ bool checkCloseAndCollinear(const Vec4f& l1, const Vec4f& l2, float angleThresho
 }
 
 // Merge two lines into a single line by connecting the farthest points
-Vec4f mergeLines(const Vec4i& l1, const Vec4i& l2) {
+Vec4i mergeLines(const Vec4i& l1, const Vec4i& l2) {
     Point p1_start(l1[0], l1[1]);
     Point p1_end(l1[2], l1[3]);
     Point p2_start(l2[0], l2[1]);
@@ -329,6 +329,49 @@ vector<Point> removeMiddlePoints(vector<Point>& points, double epsilon = 1.0) {
 }
 
 
+//------------------------------------------------------------fiter the lines on which the best midpoints fall on-------------------------------------
+// Function to calculate the midpoint of a line segment
+// Point calculateMidpoint(const Vec4i& line) {
+//     return Point((line[0] + line[2]) / 2, (line[1] + line[3]) / 2);
+// }
+
+// Function to calculate the distance between two points
+double distanceBetweenPoints(const Point& p1, const Point& p2) {
+    return sqrt(pow(p1.x - p2.x, 2) + pow(p1.y - p2.y, 2));
+}
+
+// Function to find the line with the closest midpoint to a given point
+Vec4i findClosestLine(const Point& point, const vector<Vec4i>& lines) {
+    Vec4i closestLine;
+    double minDistance = numeric_limits<double>::max(); // Initialize with a large value
+
+    for (const auto& line : lines) {
+        Point midpoint = findmidpoint(line);
+        double distance = distanceBetweenPoints(point, midpoint);
+
+        if (distance < minDistance) {
+            minDistance = distance;
+            closestLine = line;
+        }
+    }
+
+    return closestLine;
+}
+
+// Function to assign each point to the line whose midpoint is closest to it
+vector<pair<Point, Vec4i>> assignPointsToLines(const vector<Point>& points, const vector<Vec4i>& lines) {
+    vector<pair<Point, Vec4i>> assignments;
+
+    for (const auto& point : points) {
+        Vec4i closestLine = findClosestLine(point, lines);
+        assignments.push_back(make_pair(point, closestLine));
+    }
+
+    return assignments;
+}
+//-----------------------------------------------------------------------------------------------------------------------------------------------------
+
+
 int main() {
     string directory = "ParkingLot_dataset/sequence0/frames"; 
 
@@ -476,7 +519,7 @@ int main() {
         for (size_t i = 0; i < lines.size(); i++) 
         {
             
-        Vec4f l = lines[i];
+        Vec4i l = lines[i];
         //------------------------------------finding angle--------------------------------------------
         float angle;
         int dx=l[3] - l[1];
@@ -676,7 +719,15 @@ for (size_t i = 0; i < filteredPoints.size()-1; i++)
                     }
 
 
-                    cout<<" size of rect mid is"<<rectmid.size();
+                    cout<<" size of rect mid is"<<rectmid.size()<<endl;
+
+
+//-----------------------------------------------------------------------finding the lines on which the midpoints exists------------------------------
+
+                    vector<pair<Point, Vec4i>> assignments = assignPointsToLines(filteredPoints, positiveLines);
+                    cout<<" size of filtered mid lines is"<<assignments.size()<<endl;
+
+
 
 
 
