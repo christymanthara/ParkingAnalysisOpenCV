@@ -393,6 +393,8 @@ int main() {
         
         // imshow("image" + to_string(i),image);
 
+        Mat blackimg; 
+        image.copyTo(blackimg);
         Mat masked;
 
         masked = masking(image,i);
@@ -722,10 +724,41 @@ for (size_t i = 0; i < filteredPoints.size()-1; i++)
                     cout<<" size of rect mid is"<<rectmid.size()<<endl;
 
 
-//-----------------------------------------------------------------------finding the lines on which the midpoints exists------------------------------
+//-----------------------------------------------------------------------finding the lines on which the midpoints exists=successsss------------------------------
 
                     vector<pair<Point, Vec4i>> assignments = assignPointsToLines(filteredPoints, positiveLines);
+                    
                     cout<<" size of filtered mid lines is"<<assignments.size()<<endl;
+
+
+                    
+                // Draw lines and points
+                        for (const auto& assignment : assignments) {
+                            const Vec4i& newline = assignment.second; // The line segment
+                            Point p(newline[0], newline[1]); // Start point of the line
+                            Point pn(newline[2], newline[3]); // End point of the line
+
+                            // Calculate the midpoint of the line segment
+                            Point midpoint((p.x + pn.x) / 2, (p.y + pn.y) / 2);
+
+                            // Draw the line segment
+                            line(blackimg, p, pn, Scalar(0, 255, 0), 2, LINE_AA);
+
+                            // Draw circles at the endpoints
+                            circle(blackimg, p, 5, Scalar(180, 255, 0), -1);
+                            circle(blackimg, pn, 5, Scalar(180, 255, 0), -1);
+
+                            // Calculate the slope of the line segment
+                            float slope = (pn.y - p.y) / (float)(pn.x - p.x);
+                            
+                            // Optional: Draw the midpoint and the angle text
+                            putText(blackimg, format("Slope: %.2f", slope), midpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
+                        }
+
+//=================================================== drawing rotated rectangles=============================================================================
+
+
+
 
 
 
@@ -747,7 +780,7 @@ for (size_t i = 0; i < filteredPoints.size()-1; i++)
 
     imshow("Detected White Lines and Merged", randomcolored);
 
-
+    imshow("Final", blackimg);
 
         i++;
         waitKey(0); 
