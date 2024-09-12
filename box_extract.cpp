@@ -699,17 +699,20 @@ for (size_t i = 0; i < filteredPoints.size()-1; i++)
 
         }
 
-        //--------------------------------------------------joining the midpoints in order-------------------------------------------------------
+        //--------------------------------------------------joining the midpoints in order == straight lines-------------------------------------------------------
+            //you get  the center and the height of the lines from here
             vector<Point> rectmid;
+            vector<float> midlength;
                 for (size_t i = 0; i < filteredPoints.size()-2; i++)
                     {
                         Point p = filteredPoints[i];
                         Point pn = filteredPoints[i+2];
 
 
-
+                        midlength.push_back(pointDistance(p,pn));
                         Point midomid((p.x+pn.x)/2, (p.y+pn.y)/2); // midpoint of the filtered midpoints
                         rectmid.push_back(midomid);
+
                     //finding the slope
                     // Calculate the slope as y2-y1 / x2-x1
                     float slope = (pn.y - p.y) / (float)(pn.x - p.x);
@@ -722,6 +725,7 @@ for (size_t i = 0; i < filteredPoints.size()-1; i++)
 
 
                     cout<<" size of rect mid is"<<rectmid.size()<<endl;
+                    cout<<" size of lines between midpoints is"<<rectmid.size()<<endl;
 
 
 //-----------------------------------------------------------------------finding the lines on which the midpoints exists=successsss------------------------------
@@ -755,17 +759,49 @@ for (size_t i = 0; i < filteredPoints.size()-1; i++)
                             putText(blackimg, format("Slope: %.2f", slope), midpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
                         }
 
-//=================================================== drawing rotated rectangles=============================================================================
+//=================================================== building the rotated rectangles=============================================================================
 
+                vector<RotatedRect> rec;
+                for (int i = 0; i < assignments.size() - 2; i++) 
+                {
+                const Vec4i& line1 = assignments[i].second;
+                const Vec4i& line2 = assignments[i + 2].second; 
 
+                double l1 = lineLength(line1); 
+                double l2 = lineLength(line2); 
 
+                float bestAngle = findAngle(line1) > findAngle(line2) ? findAngle(line1) : findAngle(line2); 
+                float bestLength = l1 > l2 ? l1 * 2 : l2 * 2; // Width of the rectangle (scaled)
+                if(bestLength > 50)
+                {
+                    bestLength*0.5;
+                }
+                float bestMid = midlength[i]*0.8; 
 
+                Point2f center = rectmid[i]; 
+                Size2f dim(bestLength, bestMid); //dimensions for the rotated rectangle
 
+                rec.push_back(RotatedRect(center, dim, bestAngle)); 
+                }
 
+                cout<<" number of rectangles is"<<rec.size()<<endl;
+
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++drawing the rounded rectangles+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+                for(const auto& rectangle : rec)
+                {
+
+                Point2f vertices[4];
+                    rectangle.points(vertices);
+                    for (int i = 0; i < 4; i++)
+                        line(blackimg, vertices[i], vertices[(i+1)%4], Scalar(214,108,98), 3);
+                }
 
 
 
         //----------------------------------------------------------eliminating the lines which are off angle in the ones that are connected
+
+
 
 
 
