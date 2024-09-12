@@ -220,30 +220,113 @@ bool compareLinesByStartPointY(const Vec4i &a, const Vec4i &b) {
     return a[1] < b[1];
 }
 
-double distance(const Point& p1, const Point& p2) {
-    return sqrt(pow(p1.x - p2.x, 2) + pow(p1.y - p2.y, 2));
+bool compareLinesByEndPointY(const Vec4i &a, const Vec4i &b) {
+    // Compare by the y-coordinate of the end point
+    return a[3] < b[3];
 }
 
-//to compare lines by their y position
-vector<Vec4i> filterLinesByDistance2(vector<Vec4i>& lines, double minDistance) {
-    vector<Vec4i> filteredLines;
-    if (lines.empty()) return filteredLines;
+bool compareLinesByStartPointX(const Vec4i &a, const Vec4i &b) {
+    // Compare by the x-coordinate of the start point
+    return a[0] < b[0];
+}
 
-    filteredLines.push_back(lines[0]);
-    Point lastMidpoint = findmidpoint(lines[0]);
+bool compareLinesByEndPointX(const Vec4i &a, const Vec4i &b) {
+    // Compare by the x-coordinate of the end point
+    return a[2] < b[2];
+}
 
-    for (size_t i = 1; i < lines.size(); ++i) {
-        Point currentMidpoint = findmidpoint(lines[i]);
-        if (distance(lastMidpoint, currentMidpoint) >= minDistance) {
-            filteredLines.push_back(lines[i]);
-            lastMidpoint = currentMidpoint;
+
+bool comparePointsByY(const Point& a, const Point& b) {
+    return a.y < b.y;
+}
+
+
+
+//---------------------------------------------------------------------to filter by distance of midpoints
+
+//----------------------------------------------------------checking if the y sorted lines are collinear------------------------------------------
+// double triangleArea(const Point& A, const Point& B, const Point& C) {
+    
+//     cout<<"the points are A:"<<A.x<<","<<A.y<<" B:"<<B.x<<","<<B.y<<" and C:"<<C.x<<","<<C.y<<endl;  
+//     double triarea = 0.5 * abs(A.x * (B.y - C.y) + B.x * (C.y - A.y) + C.x * (A.y - B.y));
+//     cout<<" area ="<<triarea<<endl;
+//     return triarea;
+// }
+
+// Function to check if three points are nearly collinear using the triangle area 
+// bool arePointsNearlyCollinear(const Point& A, const Point& B, const Point& C, double epsilon = 1.0) {
+    
+//     return triangleArea(A, B, C) < epsilon;
+// }
+
+// Function to calculate the slope between two points
+double calculateSlope(const Point& p1, const Point& p2) {
+    if (p2.x == p1.x) { // Avoid division by zero
+        return numeric_limits<double>::infinity(); // Infinite slope (vertical line)
+    }
+    return static_cast<double>(p2.y - p1.y) / (p2.x - p1.x);
+}
+
+// Function to check if three points are nearly collinear
+bool arePointsNearlyCollinear(const Point& A, const Point& B, const Point& C, double epsilon = 0.12) {
+
+    cout<<"the points are A:"<<A.x<<","<<A.y<<" B:"<<B.x<<","<<B.y<<" and C:"<<C.x<<","<<C.y<<endl; 
+    double slopeAB = calculateSlope(A, B);
+    cout<<" slope ="<<slopeAB<<endl;
+    double slopeBC = calculateSlope(B, C);
+    cout<<" slope ="<<slopeBC<<endl;
+
+    double diff = fabs(slopeAB - slopeBC);
+
+    bool slopezero = slopeAB==0;
+    if(slopezero)
+        return !slopezero;
+
+    bool oppositeSigns = (slopeAB<0 && slopeBC >0 || slopeAB>0 && slopeBC<0); // if one is negative then this becomes true
+    
+    
+    return !oppositeSigns;
+
+}
+
+// Function to remove middle points from nearly collinear triplets using area
+// vector<Point> removeMiddlePoints(vector<Point>& points, double epsilon = 170.0) {
+//     vector<Point> filteredPoints;
+    
+
+//     for (size_t i = 0; i < points.size(); ++i) {
+//         if (i == 0 || i == points.size() - 1) {
+//             // keep the first and last points
+//             filteredPoints.push_back(points[i]);
+//         } else {
+//             // Check if points[i-1], points[i], and points[i+1] are nearly collinear
+//             if (!arePointsNearlyCollinear(points[i-1], points[i], points[i+1], epsilon)) {
+//                 filteredPoints.push_back(points[i]);
+//             }
+//         }
+//     }
+
+//     return filteredPoints;
+// }
+
+vector<Point> removeMiddlePoints(vector<Point>& points, double epsilon = 1.0) {
+    vector<Point> filteredPoints;
+
+    // Iterate through consecutive triplets of points
+    for (size_t i = 0; i < points.size(); ++i) {
+        if (i == 0 || i == points.size() - 1) {
+            // Always keep the first and last points
+            filteredPoints.push_back(points[i]);
+        } else if (i < points.size() - 1) {
+            // Check if points[i-1], points[i], and points[i+1] are nearly collinear
+            if (!arePointsNearlyCollinear(points[i-1], points[i], points[i+1], epsilon)) {
+                filteredPoints.push_back(points[i]);
+            }
         }
     }
 
-    return filteredLines;
+    return filteredPoints;
 }
-//---------------------------------------------------------------------to filter by distance of midpoints
-
 
 
 int main() {
@@ -489,15 +572,10 @@ int main() {
         vector<Vec4i> positiveLines = checkPositiveSlope(filteredLines); //works
 
 
-            //-----------------------------------------------------------using the sort function
-         double midDistance = 50;
+            //-----------------------------------------------------------using the sort function-------------------------------------------------------------
 
-        vector<Vec4i> filteredLinesre = filterLinesByDistance2(positiveLines, midDistance);
-
-        
-
-
-        std::sort(positiveLines.begin(), positiveLines.end(), compareLinesByStartPointY);
+        sort(positiveLines.begin(), positiveLines.end(), compareLinesByEndPointY);
+        // sort(positiveLines.begin(), positiveLines.end(), compareLinesByStartPointX);
 //-----------------------------------------------------------------------------------------------------------------------------
 
         vector<Point> midPos;
@@ -509,6 +587,8 @@ int main() {
 
         cout<<"size of midpoints"<< midPos.size()<<endl; //works
 
+        vector<Point> filteredPoints = removeMiddlePoints(midPos);
+        cout<<"size of midpoints filtered"<< filteredPoints.size()<<endl; //works
 
        
         
@@ -530,17 +610,74 @@ int main() {
 
 
         }
-
-        for (size_t i = 0; i < filteredLinesre.size()-1; i++)
+        //_____________________________________________________________drawing result of collinear midpoints removed----------------------------------------
+        for (size_t i = 0; i < filteredPoints.size()-1; i++)
         {
-            Vec4i lin = filteredLinesre[i];
+            Point p = filteredPoints[i];
+            Point pn = filteredPoints[i+1];
 
-            line(image, Point(lin[0], lin[1]), Point(lin[2], lin[3]), Scalar(0, 255, 0), 2, LINE_AA);
-   
+
+
+            Point midomid((p.x+pn.x)/2, (p.y+pn.y)/2); // midpoint of the filtered midpoints
+        
+        //finding the slope
+        // Calculate the slope as y2-y1 / x2-x1
+        float slope = (pn.y - p.y) / (float)(pn.x - p.x);
+        line(extImage,p, pn, Scalar(0, 255, 0), 2, LINE_AA);
+        putText(extImage, format("The angle is %.2f", slope), midomid, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
+        circle(extImage, p, 5, Scalar(100, 255, 0), -1);
 
 
         }
-     
+
+
+//-------------------------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------sorting filtered collinear midpoints and printing the result--------------------------------------------
+sort(filteredPoints.begin(), filteredPoints.end(), comparePointsByY);
+
+for (size_t i = 0; i < filteredPoints.size()-1; i++)
+        {
+            Point p = filteredPoints[i];
+            Point pn = filteredPoints[i+1];
+
+
+
+            Point midomid((p.x+pn.x)/2, (p.y+pn.y)/2); // midpoint of the filtered midpoints
+        
+        //finding the slope
+        // Calculate the slope as y2-y1 / x2-x1
+        float slope = (pn.y - p.y) / (float)(pn.x - p.x);
+        line(extImage,p, pn, Scalar(0, 255, 0), 2, LINE_AA);
+        putText(extImage, format("The angle is %.2f", slope), midomid, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
+        circle(extImage, p, 5, Scalar(180, 255, 0), -1);
+
+
+        }
+
+        //--------------------------------------------------joining the midpoints in order-------------------------------------------------------
+            vector<Point> rectmid;
+                for (size_t i = 0; i < filteredPoints.size()-2; i++)
+                    {
+                        Point p = filteredPoints[i];
+                        Point pn = filteredPoints[i+2];
+
+
+
+                        Point midomid((p.x+pn.x)/2, (p.y+pn.y)/2); // midpoint of the filtered midpoints
+                        rectmid.push_back(midomid);
+                    //finding the slope
+                    // Calculate the slope as y2-y1 / x2-x1
+                    float slope = (pn.y - p.y) / (float)(pn.x - p.x);
+                    line(image,p, pn, Scalar(0, 255, 0), 2, LINE_AA);
+                    putText(image, format("The angle is %.2f", slope), midomid, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
+                    circle(image, p, 5, Scalar(180, 255, 0), -1);
+
+
+                    }
+
+
+                    cout<<" size of rect mid is"<<rectmid.size();
+
 
 
 
