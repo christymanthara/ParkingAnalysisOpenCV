@@ -772,11 +772,11 @@ for (size_t i = 0; i < filteredPoints.size()-1; i++)
 
                 float bestAngle = findAngle(line1) > findAngle(line2) ? findAngle(line1) : findAngle(line2); 
                 float bestLength = l1 > l2 ? l1 * 2 : l2 * 2; // Width of the rectangle (scaled)
-                if(bestLength > 50)
-                {
-                    bestLength*0.5;
-                }
-                float bestMid = midlength[i]*0.8; 
+                // float bestLength = l1 > l2 ? l1  : l2 ; // Width of the rectangle (scaled)
+                
+                float bestMid = midlength[i]*0.8;  //height of the rectangle
+
+                
 
                 Point2f center = rectmid[i]; 
                 Size2f dim(bestLength, bestMid); //dimensions for the rotated rectangle
