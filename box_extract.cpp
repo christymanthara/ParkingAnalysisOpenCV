@@ -897,9 +897,10 @@ for (size_t i = 0; i < mergedLines2l.size(); i++) { //mergedLines has all the li
 
         vector<Point> filteredPoints = removeMiddlePoints(midPos);
         // cout<<"size of midpoints filtered"<< filteredPoints.size()<<endl; //works
-        vector<Point> filteredPoints2l = removeMiddlePoints(midPos2l);
-       vector<Point> filteredPoints2r = removeMiddlePoints(midPos2r);
-
+        // vector<Point> filteredPoints2l = removeMiddlePoints(midPos2l);
+            vector<Point> filteredPoints2l = midPos2l; // not removing middlepoints because the arrangement is different
+    //    vector<Point> filteredPoints2r = removeMiddlePoints(midPos2r);
+            vector<Point> filteredPoints2r = midPos2r;
 
        //{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{displaying the output till here}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
         
@@ -1111,20 +1112,67 @@ for (size_t i = 0; i < filteredPoints.size()-1; i++)
 
 
 
-                    // cout<<" size of rect mid is"<<rectmid.size()<<endl;
-                    // cout<<" size of lines between midpoints is"<<rectmid.size()<<endl;
+                    cout<<" size of rect mid is"<<rectmid2l.size()<<endl;
+                    cout<<" size of lines between midpoints is"<<rectmid2l.size()<<endl;
 
 
 //-----------------------------------------------------------------------finding the lines on which the midpoints exists=successsss------------------------------
 
                     vector<pair<Point, Vec4i>> assignments = assignPointsToLines(filteredPoints, positiveLines);
-                    
-                    // cout<<" size of filtered mid lines is"<<assignments.size()<<endl;
+                    vector<pair<Point, Vec4i>> assignments2l = assignPointsToLines(filteredPoints2l, positiveLines2l); // fix these
+                    vector<pair<Point, Vec4i>> assignments2r = assignPointsToLines(filteredPoints2r, positiveLines2r); //fix these
+                    cout<<" size of filtered mid lines is"<<assignments2l.size()<<endl;
 
 
                     
                 // Draw lines and points
                         for (const auto& assignment : assignments) {
+                            const Vec4i& newline = assignment.second; // The line segment
+                            Point p(newline[0], newline[1]); // Start point of the line
+                            Point pn(newline[2], newline[3]); // End point of the line
+
+                            // Calculate the midpoint of the line segment
+                            Point midpoint((p.x + pn.x) / 2, (p.y + pn.y) / 2);
+
+                            // Draw the line segment
+                            line(blackimg, p, pn, Scalar(0, 255, 0), 2, LINE_AA);
+
+                            // Draw circles at the endpoints
+                            circle(blackimg, p, 5, Scalar(180, 255, 0), -1);
+                            circle(blackimg, pn, 5, Scalar(180, 255, 0), -1);
+
+                            // Calculate the slope of the line segment
+                            float slope = (pn.y - p.y) / (float)(pn.x - p.x);
+                            
+                            // Optional: Draw the midpoint and the angle text
+                            putText(blackimg, format("Slope: %.2f", slope), midpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
+                        }
+
+                        // Draw lines and points
+                        for (const auto& assignment : assignments2l) {
+                            const Vec4i& newline = assignment.second; // The line segment
+                            Point p(newline[0], newline[1]); // Start point of the line
+                            Point pn(newline[2], newline[3]); // End point of the line
+
+                            // Calculate the midpoint of the line segment
+                            Point midpoint((p.x + pn.x) / 2, (p.y + pn.y) / 2);
+
+                            // Draw the line segment
+                            line(blackimg, p, pn, Scalar(0, 255, 0), 2, LINE_AA);
+
+                            // Draw circles at the endpoints
+                            circle(blackimg, p, 5, Scalar(180, 255, 0), -1);
+                            circle(blackimg, pn, 5, Scalar(180, 255, 0), -1);
+
+                            // Calculate the slope of the line segment
+                            float slope = (pn.y - p.y) / (float)(pn.x - p.x);
+                            
+                            // Optional: Draw the midpoint and the angle text
+                            putText(blackimg, format("Slope: %.2f", slope), midpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
+                        }
+
+                        // Draw lines and points
+                        for (const auto& assignment : assignments2r) {
                             const Vec4i& newline = assignment.second; // The line segment
                             Point p(newline[0], newline[1]); // Start point of the line
                             Point pn(newline[2], newline[3]); // End point of the line
@@ -1205,7 +1253,7 @@ for (size_t i = 0; i < filteredPoints.size()-1; i++)
 
     imshow("Detected White Lines and Merged", randomcolored);
 
-    // imshow("Final", blackimg); // the lines of first parking lot
+    imshow("Final", blackimg); // the lines of first parking lot
 
         i++;
         waitKey(0); 
