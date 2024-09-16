@@ -1219,6 +1219,54 @@ for (size_t i = 0; i < filteredPoints.size()-1; i++)
                 rec.push_back(RotatedRect(center, dim, bestAngle)); 
                 }
 
+//-------------------------------------------------------------------------------for second lines left 
+                vector<RotatedRect> rec2l;
+                for (int i = 0; i < assignments2l.size() - 2; i++) 
+                {
+                const Vec4i& line1 = assignments2l[i].second;
+                const Vec4i& line2 = assignments2l[i + 2].second; 
+
+                double l1 = lineLength(line1); 
+                double l2 = lineLength(line2); 
+
+                float bestAngle = findAngle(line1) > findAngle(line2) ? findAngle(line1) : findAngle(line2); 
+                float bestLength = l1 > l2 ? l1 : l2; // Width of the rectangle (scaled)
+                // float bestLength = l1 > l2 ? l1  : l2 ; // Width of the rectangle (scaled)
+                
+                float bestMid = midlength2l[i]*0.8;  //height of the rectangle
+
+                
+
+                Point2f center = rectmid2l[i]; 
+                Size2f dim(bestLength, bestMid); //dimensions for the rotated rectangle
+
+                rec2l.push_back(RotatedRect(center, dim, bestAngle)); 
+                }
+
+//-------------------------------------------------------------------------------for second lines right
+                vector<RotatedRect> rec2r;
+                for (int i = 0; i < assignments2r.size() - 2; i++) 
+                {
+                const Vec4i& line1 = assignments2r[i].second;
+                const Vec4i& line2 = assignments2r[i + 2].second; 
+
+                double l1 = lineLength(line1); 
+                double l2 = lineLength(line2); 
+
+                float bestAngle = findAngle(line1) > findAngle(line2) ? findAngle(line1) : findAngle(line2); 
+                float bestLength = l1 > l2 ? l1  : l2; // Width of the rectangle (scaled)
+                // float bestLength = l1 > l2 ? l1  : l2 ; // Width of the rectangle (scaled)
+                
+                float bestMid = midlength2r[i]*0.8;  //height of the rectangle
+
+                
+
+                Point2f center = rectmid2r[i]; 
+                Size2f dim(bestLength, bestMid); //dimensions for the rotated rectangle
+
+                rec2r.push_back(RotatedRect(center, dim, bestAngle)); 
+                }
+
                 // cout<<" number of rectangles is"<<rec.size()<<endl;
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++drawing the rounded rectangles+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1232,7 +1280,24 @@ for (size_t i = 0; i < filteredPoints.size()-1; i++)
                         line(blackimg, vertices[i], vertices[(i+1)%4], Scalar(214,108,98), 3);
                 }
 
+                for(const auto& rectangle : rec2l)
+                {
 
+                Point2f vertices[4];
+                    rectangle.points(vertices);
+                    for (int i = 0; i < 4; i++)
+                        line(blackimg, vertices[i], vertices[(i+1)%4], Scalar(214,108,98), 3);
+                }
+
+                for(const auto& rectangle : rec2r)
+                {
+
+                Point2f vertices[4];
+                    rectangle.points(vertices);
+                    for (int i = 0; i < 4; i++)
+                        line(blackimg, vertices[i], vertices[(i+1)%4], Scalar(214,108,98), 3);
+                }
+                
 
         //----------------------------------------------------------eliminating the lines which are off angle in the ones that are connected
 
