@@ -11,7 +11,9 @@ using namespace cv;
 
 // Function declarations
 Mat CannyThreshold(Mat img);
-Mat masking(Mat image, int i);
+Mat masking(Mat image, int i); //for the first set of lines
+Mat masking2l(Mat image,int i); //for the second set of lines left
+Mat masking2r(Mat image,int i); //for the second set of lines right
 Mat findlines(Mat img, int i);
 Mat applyMSER(Mat img, int i);
 void sobelApplied(Mat img);

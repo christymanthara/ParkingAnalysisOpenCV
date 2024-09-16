@@ -1,4 +1,4 @@
-./output
+
 essentials.txt
 hsvrange.py
 hsv_value.npy
@@ -8,3 +8,8 @@ readfiles.cpp
 linedetect.cpp
 linedetect2.cpp
 combinelines.cpp
+generated_images/
+ground_truth_rectangles/
+trialrectangles.py
+trialrectangles.cpp
+output

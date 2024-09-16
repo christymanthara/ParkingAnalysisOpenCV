@@ -270,11 +270,11 @@ double calculateSlope(const Point& p1, const Point& p2) {
 // Function to check if three points are nearly collinear
 bool arePointsNearlyCollinear(const Point& A, const Point& B, const Point& C, double epsilon = 0.12) {
 
-    cout<<"the points are A:"<<A.x<<","<<A.y<<" B:"<<B.x<<","<<B.y<<" and C:"<<C.x<<","<<C.y<<endl; 
+    // cout<<"the points are A:"<<A.x<<","<<A.y<<" B:"<<B.x<<","<<B.y<<" and C:"<<C.x<<","<<C.y<<endl; 
     double slopeAB = calculateSlope(A, B);
-    cout<<" slope ="<<slopeAB<<endl;
+    // cout<<" slope ="<<slopeAB<<endl;
     double slopeBC = calculateSlope(B, C);
-    cout<<" slope ="<<slopeBC<<endl;
+    // cout<<" slope ="<<slopeBC<<endl;
 
     double diff = fabs(slopeAB - slopeBC);
 
@@ -393,12 +393,18 @@ int main() {
         
         // imshow("image" + to_string(i),image);
 
+        Mat checker;
+        image.copyTo(checker);
         Mat blackimg; 
         image.copyTo(blackimg);
         Mat masked;
+        Mat masked2l,masked2r;
 
-        masked = masking(image,i);
+        masked = masking(image,i); //masked lines for the first set
+        // masked2l = masking2(image,i); //masked lines for the second set
         image.copyTo(extImage);
+        
+
 
         Mat randomcolored;
         image.copyTo(randomcolored);
@@ -410,12 +416,21 @@ int main() {
         
         // ------------------------------------------------------applying masking and gamma to xyz to the image------------------------------
         masked = masking(imgxyz,i);
+        masked2l = masking2l(imgxyz,i);
+        masked2r = masking2r(imgxyz,i);
+        // imshow("masked2l"+ to_string(i), masked2l); 
+        // imshow("masked2r"+ to_string(i), masked2r); 
+
+
         //
         float gamma = 3.0; //3.2
-        cv::Mat gammaresult;
+        Mat gammaresult, gammaresult2l,gammaresult2r;
         gammaCorrection(masked, gammaresult, gamma);
-        // imshow("Gamma corrected "+ to_string(i), gammaresult); 
+        gammaCorrection(masked2l, gammaresult2l, gamma);
+        gammaCorrection(masked2r, gammaresult2r, gamma);
 
+        // imshow("Gamma corrected "+ to_string(i), gammaresult2l); 
+        // imshow("Gamma corrected "+ to_string(i), gammaresult2r); 
 
 
 
@@ -430,19 +445,30 @@ int main() {
 
         //----------------------------------------------------------------converting to gray-------------------------------------
         //make into gray
-        Mat gray;
+        Mat gray,gray2l,gray2r;
         cvtColor(gammaresult, gray, COLOR_BGR2GRAY);
-        // imshow("gray"+ to_string(i), gray);
+        cvtColor(gammaresult2l, gray2l, COLOR_BGR2GRAY);
+        cvtColor(gammaresult2r, gray2r, COLOR_BGR2GRAY);
+        // imshow("gray"+ to_string(i), gray2l);
         
         //-------------------------------------------------------applying morphological operation-----------------------------------
         morphologyEx( gray, final,MORPH_GRADIENT, Mat());
-        // imshow("Morph gradient image" + to_string(i),final);
+        Mat final2l,final2r;
+        morphologyEx( gray2l, final2l,MORPH_CROSS, Mat());
+        // imshow("Morph gradient image 2l" + to_string(i),final2l);
+        morphologyEx( gray2r, final2r,MORPH_CROSS, Mat());
+        // imshow("Morph gradient image 2r" + to_string(i),final2r);
+        // morphologyEx( gammaresult2r, final2r,MORPH_CROSS, Mat());
+        // imshow("morphresult xyz image" + to_string(i),final2r);
 
         
         //-----------------------------------------------------------------applying thresholding------------------------------------
-        Mat thresh;
+        Mat thresh, thresh2l, thresh2r;
         threshold(final, thresh, 180, 200, THRESH_BINARY + THRESH_OTSU); 
-        // imshow("Thresh lines"+ to_string(i), thresh);
+        threshold(final2l, thresh2l, 130, 200, THRESH_BINARY + THRESH_OTSU); 
+        // imshow("Thresh lines 2l"+ to_string(i), thresh2l);
+        threshold(final2r, thresh2r, 120, 150, THRESH_BINARY +THRESH_OTSU ); 
+        // imshow("Thresh lines 2r"+ to_string(i), thresh2r); //works
 
                                 // -------------------------------------extra thresholding 
                                 //     now we use erosion and dilation to make the output more prominent     
@@ -459,9 +485,12 @@ int main() {
                                 //     //-------------------------------------------
         //-----------------------------------------------------------------Canny edge detector-----------------------------------------
         // Apply Canny edge detector
-        Mat edges;
-        Canny(thresh, edges, 80, 150, 5, true); 
-        // imshow("Canny Image"+ to_string(i), edges);
+        Mat edges,edges2l, edges2r;
+        Canny(thresh, edges, 80, 150, 5, true);
+        Canny(thresh2l, edges2l, 80, 240, 3, false);
+        Canny(thresh2r, edges2r, 50, 150, 7, true);
+        imshow("Canny Image 2l"+ to_string(i), edges2l);
+        // imshow("Canny Image 2r"+ to_string(i), edges2r);
 
 
         //-----------------------------------------------------------------Finding Contours--------------------------------------------
@@ -494,25 +523,120 @@ int main() {
         // drawContours(contourImg, contours, (int)i, color, 2, LINE_8, hierarchy, 0); //uncomment to draw
         // drawContours(contourImg, app_contours, (int)i, color, 2, LINE_8, hierarchy, 0);
     }
-    imshow("Contour Image"+ to_string(i), contourImg);
+    // imshow("Contour Image"+ to_string(i), contourImg);
 
         //-----------------------------------------------------------------Hough transform---------------------------------------------
-        vector<Vec4i> lines;
-        HoughLinesP(edges, lines, 1, CV_PI / 180, 20, 10, 7);
+        vector<Vec4i> lines , lines2l, lines2r;
+        HoughLinesP(edges, lines, 1, CV_PI / 180, 20, 10, 7);//HoughLinesP(edges, lines, 1, CV_PI / 180, 20, 10, 7);
 
+        //////////////////////////////////////////////////////////////second set of lines extraction/////////////////////////////////////////////////
+        HoughLinesP(edges2l, lines2l, 1,  CV_PI / 180, 8, 5, 35); //change the threshold for better results
+        HoughLinesP(edges2r, lines2r, 1, CV_PI / 180, 20, 5, 35);
+
+
+        // double distanceThreshold = 10.0; // adjust this threshold= best =2
+        // filterLines(lines2, distanceThreshold);
+
+        //making the slopes positive
+        lines2l = checkPositiveSlope(lines2l);
+        lines2r = checkPositiveSlope(lines2r);
+
+        // cout<<"lines 2l"<<lines2l.size()<<endl; //lines 2l has the values
+
+        //////////////////////////////////////////////////////// drawing the lines 2l////////////////////////////////////////////////////////////////
+        // fix here
+
+        vector<Vec4i> lines2lfiltered;  // to store the detected lines filtered by the angle
+        for (size_t i = 0; i < lines2l.size(); i++) {
+        cv::Vec4i l = lines2l[i]; //left lines
+
+        // Draw the left lines of set 2 on the output image
+
+        //------------------------------------finding angle--------------------------------------------
+        float angle;
+        int dy=l[3] - l[1];
+        int dx=l[2] - l[0];
+        angle = atan2(dy,dx)* 180.0 / CV_PI;
+        
+         if( (angle>=88 && angle <= 135))
+        {
+        lines2lfiltered.push_back(l);
+        Point midl = findmidpoint(l);
+        // Point midr = findmidpoint(l2);
+        putText(contourImg, format("The angle is %.2f", angle), midl, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
+        cv::line(contourImg, cv::Point(l[0], l[1]), cv::Point(l[2], l[3]), cv::Scalar(0, 255, 0), 2); //second set of lines left
+        }
+    }
+    // cout<<"filterlines 2l"<<lines2lfiltered.size()<<endl;
+    // imshow("contourcheck2l",contourImg);
+
+
+
+
+
+
+        vector<Vec4i> lines2rfiltered; // to store the detected lines filtered by the angle
+            //drawing second set of lines on right
+           for (size_t i = 0; i < lines2r.size(); i++) {
+        // cv::Vec4i l = lines2l[i]; //left lines
+        cv::Vec4i l2 = lines2r[i]; //right lines
+
+        // Draw the left lines of set 2 on the output image
+
+        //------------------------------------finding angle--------------------------------------------
+        float angle, angle2;
+
+
+        int dx=l2[3] - l2[1];
+        int dy=l2[2] - l2[0];
+        angle2 = atan2(dy,dx)* 180.0 / CV_PI;
+
+     
+        
+        if( (angle2>=75 && angle2 <=95)) //perfect
+        {
+
+        lines2rfiltered.push_back(l2);
+        
+        Point midr = findmidpoint(l2);
+        // putText(contourImg, format("The angle is %.2f", angle), midl, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
+        // cv::line(contourImg, cv::Point(l[0], l[1]), cv::Point(l[2], l[3]), cv::Scalar(0, 255, 0), 2); //second set of lines left
+        putText(contourImg, format("The angle is %.2f", angle2), midr, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
+        cv::line(contourImg, cv::Point(l2[0], l2[1]), cv::Point(l2[2], l2[3]), cv::Scalar(0, 255, 0), 2); //second set of lines right
+        }
+
+        
+
+    }
+
+
+
+
+        // imshow("edges on Image"+ to_string(i), contourImg);
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
    
 
 
         //---------------------------------------------------------------Choosing lines which are smaller-------------------------------------
-        double distanceThreshold = 2.0; // adjust this threshold= best =2
+        double distanceThreshold = 2.0; // adjust this threshold= best =2 // first set of lines
         filterLines(lines, distanceThreshold);
 
 
+        // double distanceThreshold = 2.0; // adjust this threshold= best =2 // first set of lines
+
+
+        filterLines(lines2lfiltered, distanceThreshold);
+        filterLines(lines2rfiltered, distanceThreshold);
+
+        cout<<"filterlines 2l"<<lines2lfiltered.size()<<endl;
+        cout<<"filterlines 2r"<<lines2rfiltered.size()<<endl;
 
 
 
 //{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
+        //recursively merging the lines on the far left
+        
         //------------------------------------------------------to check merging--------------------------------
         vector<Vec4i> mergedLines;  // for storing the merged lines
         vector<bool> merged(lines.size(), false);
@@ -520,7 +644,6 @@ int main() {
         // Draw the detected lines on the original image
         for (size_t i = 0; i < lines.size(); i++) 
         {
-            
         Vec4i l = lines[i];
         //------------------------------------finding angle--------------------------------------------
         float angle;
@@ -531,19 +654,14 @@ int main() {
         //------------------------------------finding the length-----------------------------------------------
         double length = sqrt(pow(dy, 2) + pow(dx, 2));
         // cout<<"the length of"<<i<< "is"<<length<<endl;
-
         //----------    --------------------------plotting the midpoint and writing the point-------------------------------------------------
         Point midpoint((l[0] + l[2]) / 2, (l[1] + l[3]) / 2);
-
         double distanceThreshold = 15.0; //15
         double angleThreshold = 10.0;
         //=============================================Finding lines that are close to each other====================================================
         Vec4i l1 = lines[i];
         Point midpoint1((l1[0] + l1[2]) / 2, (l1[1] + l1[3]) / 2); //midpoint of line1
-
         // double llength = lineLength(l1);
-        
-
         //applying recursive merging
 
         if (!merged[i]) {
@@ -560,13 +678,137 @@ int main() {
             // After merging, add the combined line to the mergedLines vector
             mergedLines.push_back(currentLine);
         }
-
-
-
         }
 
+               //recursively merging the lines on the second column left
+        
+        //------------------------------------------------------to check merging--------------------------------
+        vector<Vec4i> mergedLines2l;  // for storing the merged lines
+        vector<bool> merged2l(lines2lfiltered.size(), false);
+        //---------------------------------------------------------------------------------------------------------                    
+        // Draw the detected lines on the original image
+        for (size_t i = 0; i < lines2lfiltered.size(); i++) 
+        {
+        Vec4i l = lines2lfiltered[i];
+        //------------------------------------finding angle--------------------------------------------
+        float angle;
+        int dx=l[3] - l[1];
+        int dy=l[2] - l[0];
+        angle = atan2(dy,dx)* 180.0 / CV_PI;
+        // cout<<"the angle"<<i<< "is"<<angle<<endl;
+        //------------------------------------finding the length-----------------------------------------------
+        double length = sqrt(pow(dy, 2) + pow(dx, 2));
+        // cout<<"the length of"<<i<< "is"<<length<<endl;
+        //----------    --------------------------plotting the midpoint and writing the point-------------------------------------------------
+        Point midpoint((l[0] + l[2]) / 2, (l[1] + l[3]) / 2);
+        double distanceThreshold = 15.0; //15
+        double angleThreshold = 20.0;
+        //=============================================Finding lines that are close to each other====================================================
+        Vec4i l1 = lines2lfiltered[i];
+        Point midpoint1((l1[0] + l1[2]) / 2, (l1[1] + l1[3]) / 2); //midpoint of line1
+        // double llength = lineLength(l1);
+        //applying recursive merging
+
+        if (!merged2l[i]) {
+            Vec4i currentLine = lines2lfiltered[i];  // Start with an unmerged line
+
+            // Recursively merge lines that are close and collinear
+            recursiveMerge(currentLine, lines2lfiltered, merged2l, angleThreshold, distanceThreshold);
+
+            float angle;
+            int dy=currentLine[3] - currentLine[1];
+            int dx=currentLine[2] - currentLine[0];
+            angle = atan2(dy,dx)* 180.0 / CV_PI;
+
+            // After merging, add the combined line to the mergedLines vector
+            mergedLines2l.push_back(currentLine);
+        }
+        }
+
+                       //recursively merging the lines on the second column right
+        
+        //------------------------------------------------------to check merging--------------------------------
+        vector<Vec4i> mergedLines2r;  // for storing the merged lines
+        vector<bool> merged2r(lines2rfiltered.size(), false);
+        //---------------------------------------------------------------------------------------------------------                    
+        // Draw the detected lines on the original image
+        for (size_t i = 0; i < lines2rfiltered.size(); i++) 
+        {
+        Vec4i l = lines2rfiltered[i];
+        //------------------------------------finding angle--------------------------------------------
+        float angle;
+        int dy=l[3] - l[1];
+        int dx=l[2] - l[0];
+        angle = atan2(dy,dx)* 180.0 / CV_PI;
+        // cout<<"the angle"<<i<< "is"<<angle<<endl;
+        //------------------------------------finding the length-----------------------------------------------
+        double length = sqrt(pow(dy, 2) + pow(dx, 2));
+        // cout<<"the length of"<<i<< "is"<<length<<endl;
+        //----------    --------------------------plotting the midpoint and writing the point-------------------------------------------------
+        Point midpoint((l[0] + l[2]) / 2, (l[1] + l[3]) / 2);
+        double distanceThreshold = 15.0; //15
+        double angleThreshold = 5.0;
+        //=============================================Finding lines that are close to each other====================================================
+        Vec4i l1 = lines2rfiltered[i];
+        Point midpoint1((l1[0] + l1[2]) / 2, (l1[1] + l1[3]) / 2); //midpoint of line1
+        // double llength = lineLength(l1);
+        //applying recursive merging
+
+        if (!merged2r[i]) {
+            Vec4i currentLine = lines2rfiltered[i];  // Start with an unmerged line
+
+            // Recursively merge lines that are close and collinear
+            recursiveMerge(currentLine, lines2rfiltered, merged2r, angleThreshold, distanceThreshold);
+
+            float angle;
+            int dy=currentLine[3] - currentLine[1];
+            int dx=currentLine[2] - currentLine[0];
+            angle = atan2(dy,dx)* 180.0 / CV_PI;
+
+            // After merging, add the combined line to the mergedLines vector
+            mergedLines2r.push_back(currentLine);
+        }
+        }
+
+// we have all the merged lines in mergerLines, mergedLines2l, mergedLines2r
+
+//PRINTING THE MERGED LINES 
+
+cout<<"merged 2r is"<< mergedLines2r.size();
 
 
+
+for (size_t i = 0; i < mergedLines2l.size(); i++) { //mergedLines has all the lines
+        Vec4i l = mergedLines2l[i];
+        float angle;
+        int dy=l[3] - l[1];
+        int dx=l[2] - l[0];
+        angle = atan2(dy,dx)* 180.0 / CV_PI;
+
+        if (angle < 0) 
+        {
+        angle += 180.0; //making +ve and in a range
+        }  
+
+        Point midpoint = findmidpoint(l);
+        double llength = lineLength(l);
+
+        // if (angle >= 3 && angle <= 20)
+        {
+        // if(llength>=20)
+        {
+        line(checker, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0, 255, 0), 2, LINE_AA);
+        putText(checker, format("The angle is %.2f", angle), midpoint, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
+        // filteredLines.push_back(l);
+        }
+        }
+
+}
+
+
+
+
+//{{{{{{{{{{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}FURTHER FILTERING }}}}}}}}}}}}}}[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]
         
         
 
@@ -599,9 +841,9 @@ int main() {
 
         
 
+//left, 2l,2r have all been merged
 
-
-        //{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{alternate: userotatedrect}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
+//{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{alternate: userotatedrect}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
         //filteredLines has the merged lines.
        
 
@@ -613,14 +855,15 @@ int main() {
 
         //-------------------------------------------------------checking for negattive slopes and making them positive in the filtered lines---------
 
-        cout<<"size of filtered lines"<< filteredLines.size()<<endl;
+        // cout<<"size of filtered lines"<< filteredLines.size()<<endl;
         vector<Vec4i> positiveLines = checkPositiveSlope(filteredLines); //works
-
+        vector<Vec4i> positiveLines = checkPositiveSlope(filteredLines); 
 
             //-----------------------------------------------------------using the sort function-------------------------------------------------------------
 
         sort(positiveLines.begin(), positiveLines.end(), compareLinesByEndPointY);
         // sort(positiveLines.begin(), positiveLines.end(), compareLinesByStartPointX);
+
 //-----------------------------------------------------------------------------------------------------------------------------
 
         vector<Point> midPos;
@@ -630,10 +873,10 @@ int main() {
         }
 
 
-        cout<<"size of midpoints"<< midPos.size()<<endl; //works
+        // cout<<"size of midpoints"<< midPos.size()<<endl; //works
 
         vector<Point> filteredPoints = removeMiddlePoints(midPos);
-        cout<<"size of midpoints filtered"<< filteredPoints.size()<<endl; //works
+        // cout<<"size of midpoints filtered"<< filteredPoints.size()<<endl; //works
 
        
         
@@ -724,15 +967,15 @@ for (size_t i = 0; i < filteredPoints.size()-1; i++)
                     }
 
 
-                    cout<<" size of rect mid is"<<rectmid.size()<<endl;
-                    cout<<" size of lines between midpoints is"<<rectmid.size()<<endl;
+                    // cout<<" size of rect mid is"<<rectmid.size()<<endl;
+                    // cout<<" size of lines between midpoints is"<<rectmid.size()<<endl;
 
 
 //-----------------------------------------------------------------------finding the lines on which the midpoints exists=successsss------------------------------
 
                     vector<pair<Point, Vec4i>> assignments = assignPointsToLines(filteredPoints, positiveLines);
                     
-                    cout<<" size of filtered mid lines is"<<assignments.size()<<endl;
+                    // cout<<" size of filtered mid lines is"<<assignments.size()<<endl;
 
 
                     
@@ -784,7 +1027,7 @@ for (size_t i = 0; i < filteredPoints.size()-1; i++)
                 rec.push_back(RotatedRect(center, dim, bestAngle)); 
                 }
 
-                cout<<" number of rectangles is"<<rec.size()<<endl;
+                // cout<<" number of rectangles is"<<rec.size()<<endl;
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++drawing the rounded rectangles+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -805,18 +1048,20 @@ for (size_t i = 0; i < filteredPoints.size()-1; i++)
 
 
 
-        imshow("Detected White Lines and Merged", randomcolored);
+        // imshow("Detected White Lines and Merged", randomcolored);
         int parallelthreshold = 200;
         // Mat filteredRect = constructRectangles(randomcolored,filteredLines, parallelthreshold);
     
 
     // Display the result
-    imshow("Detected White Lines", image);
-    imshow("Extended White Lines", extImage);
+    // imshow("Detected White Lines", image);
+    // imshow("Extended White Lines", extImage);
+    
+    imshow("2l merged"+ to_string(i), checker);
 
     imshow("Detected White Lines and Merged", randomcolored);
 
-    imshow("Final", blackimg);
+    // imshow("Final", blackimg); // the lines of first parking lot
 
         i++;
         waitKey(0); 
