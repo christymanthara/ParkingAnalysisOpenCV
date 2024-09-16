@@ -489,7 +489,7 @@ int main() {
         Canny(thresh, edges, 80, 150, 5, true);
         Canny(thresh2l, edges2l, 80, 240, 3, false);
         Canny(thresh2r, edges2r, 50, 150, 7, true);
-        imshow("Canny Image 2l"+ to_string(i), edges2l);
+        // imshow("Canny Image 2l"+ to_string(i), edges2l);
         // imshow("Canny Image 2r"+ to_string(i), edges2r);
 
 
@@ -629,8 +629,8 @@ int main() {
         filterLines(lines2lfiltered, distanceThreshold);
         filterLines(lines2rfiltered, distanceThreshold);
 
-        cout<<"filterlines 2l"<<lines2lfiltered.size()<<endl;
-        cout<<"filterlines 2r"<<lines2rfiltered.size()<<endl;
+        // cout<<"filterlines 2l"<<lines2lfiltered.size()<<endl;
+        // cout<<"filterlines 2r"<<lines2rfiltered.size()<<endl;
 
 
 
@@ -774,7 +774,7 @@ int main() {
 
 //PRINTING THE MERGED LINES 
 
-cout<<"merged 2r is"<< mergedLines2r.size();
+// cout<<"merged 2r is"<< mergedLines2r.size();
 
 
 
@@ -857,12 +857,16 @@ for (size_t i = 0; i < mergedLines2l.size(); i++) { //mergedLines has all the li
 
         // cout<<"size of filtered lines"<< filteredLines.size()<<endl;
         vector<Vec4i> positiveLines = checkPositiveSlope(filteredLines); //works
-        vector<Vec4i> positiveLines = checkPositiveSlope(filteredLines); 
-
+        vector<Vec4i> positiveLines2l = checkPositiveSlope(mergedLines2l); 
+        vector<Vec4i> positiveLines2r = checkPositiveSlope(mergedLines2r);
             //-----------------------------------------------------------using the sort function-------------------------------------------------------------
 
         sort(positiveLines.begin(), positiveLines.end(), compareLinesByEndPointY);
-        // sort(positiveLines.begin(), positiveLines.end(), compareLinesByStartPointX);
+        sort(positiveLines2l.begin(), positiveLines2l.end(), compareLinesByEndPointY);
+        sort(positiveLines2r.begin(), positiveLines2r.end(), compareLinesByEndPointY);
+
+        //working till heres
+      
 
 //-----------------------------------------------------------------------------------------------------------------------------
 
@@ -873,12 +877,31 @@ for (size_t i = 0; i < mergedLines2l.size(); i++) { //mergedLines has all the li
         }
 
 
+        vector<Point> midPos2l; // midppints of the line on the 2nd row left
+        for (size_t i = 0; i < positiveLines2l.size(); i++)
+        {
+             midPos2l.push_back(findmidpoint(positiveLines2l[i]));
+        }
+
+        vector<Point> midPos2r; // midppints of the line on the 2nd row right
+        for (size_t i = 0; i < positiveLines2r.size(); i++)
+        {
+             midPos2r.push_back(findmidpoint(positiveLines2r[i]));
+        }
+
+
         // cout<<"size of midpoints"<< midPos.size()<<endl; //works
+        // cout<<"size of midpoints 2l"<< midPos2l.size()<<endl; 
+        // cout<<"size of midpoints 2r"<< midPos2r.size()<<endl; 
+
 
         vector<Point> filteredPoints = removeMiddlePoints(midPos);
         // cout<<"size of midpoints filtered"<< filteredPoints.size()<<endl; //works
+        vector<Point> filteredPoints2l = removeMiddlePoints(midPos2l);
+       vector<Point> filteredPoints2r = removeMiddlePoints(midPos2r);
 
-       
+
+       //{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{displaying the output till here}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
         
         for (size_t i = 0; i < midPos.size()-1; i++)
         {
@@ -898,6 +921,46 @@ for (size_t i = 0; i < mergedLines2l.size(); i++) { //mergedLines has all the li
 
 
         }
+
+        for (size_t i = 0; i < midPos2l.size()-1; i++)
+        {
+            Point p = midPos2l[i];
+            Point pn = midPos2l[i+1];
+
+
+
+            Point midomid((p.x+pn.x)/2, (p.y+pn.y)/2); // midpoint of the line connecting the midpoints
+        
+        //finding the slope
+        // Calculate the slope as y2-y1 / x2-x1
+        float slope = (pn.y - p.y) / (float)(pn.x - p.x);
+        line(randomcolored,p, pn, Scalar(0, 255, 0), 2, LINE_AA);
+        putText(randomcolored, format("The angle is %.2f", slope), midomid, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
+        circle(randomcolored, p, 5, Scalar(100, 255, 0), -1);
+
+
+        }
+
+        for (size_t i = 0; i < midPos2r.size()-1; i++)
+        {
+            Point p = midPos2r[i];
+            Point pn = midPos2r[i+1];
+
+
+
+            Point midomid((p.x+pn.x)/2, (p.y+pn.y)/2); // midpoint of the line connecting the midpoints
+        
+        //finding the slope
+        // Calculate the slope as y2-y1 / x2-x1
+        float slope = (pn.y - p.y) / (float)(pn.x - p.x);
+        line(randomcolored,p, pn, Scalar(0, 255, 0), 2, LINE_AA);
+        putText(randomcolored, format("The angle is %.2f", slope), midomid, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
+        circle(randomcolored, p, 5, Scalar(100, 255, 0), -1);
+
+
+        }
+
+        //{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
         //_____________________________________________________________drawing result of collinear midpoints removed----------------------------------------
         for (size_t i = 0; i < filteredPoints.size()-1; i++)
         {
@@ -918,10 +981,50 @@ for (size_t i = 0; i < mergedLines2l.size(); i++) { //mergedLines has all the li
 
         }
 
+        for (size_t i = 0; i < filteredPoints2l.size()-1; i++)
+        {
+            Point p = filteredPoints2l[i];
+            Point pn = filteredPoints2l[i+1];
+
+
+
+            Point midomid((p.x+pn.x)/2, (p.y+pn.y)/2); // midpoint of the filtered midpoints
+        
+        //finding the slope
+        // Calculate the slope as y2-y1 / x2-x1
+        float slope = (pn.y - p.y) / (float)(pn.x - p.x);
+        line(extImage,p, pn, Scalar(0, 255, 0), 2, LINE_AA);
+        putText(extImage, format("The angle is %.2f", slope), midomid, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
+        circle(extImage, p, 5, Scalar(100, 255, 0), -1);
+
+
+        }
+
+        for (size_t i = 0; i < filteredPoints2r.size()-1; i++)
+        {
+            Point p = filteredPoints2r[i];
+            Point pn = filteredPoints2r[i+1];
+
+
+
+            Point midomid((p.x+pn.x)/2, (p.y+pn.y)/2); // midpoint of the filtered midpoints
+        
+        //finding the slope
+        // Calculate the slope as y2-y1 / x2-x1
+        float slope = (pn.y - p.y) / (float)(pn.x - p.x);
+        line(extImage,p, pn, Scalar(0, 255, 0), 2, LINE_AA);
+        putText(extImage, format("The angle is %.2f", slope), midomid, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
+        circle(extImage, p, 5, Scalar(100, 255, 0), -1);
+
+
+        }
+
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------sorting filtered collinear midpoints and printing the result--------------------------------------------
 sort(filteredPoints.begin(), filteredPoints.end(), comparePointsByY);
+sort(filteredPoints2l.begin(), filteredPoints2l.end(), comparePointsByY);
+sort(filteredPoints2r.begin(), filteredPoints2r.end(), comparePointsByY);
 
 for (size_t i = 0; i < filteredPoints.size()-1; i++)
         {
@@ -941,6 +1044,8 @@ for (size_t i = 0; i < filteredPoints.size()-1; i++)
 
 
         }
+
+        // not printing these for the 2l and 2r for now
 
         //--------------------------------------------------joining the midpoints in order == straight lines-------------------------------------------------------
             //you get  the center and the height of the lines from here
@@ -962,9 +1067,48 @@ for (size_t i = 0; i < filteredPoints.size()-1; i++)
                     line(image,p, pn, Scalar(0, 255, 0), 2, LINE_AA);
                     putText(image, format("The angle is %.2f", slope), midomid, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
                     circle(image, p, 5, Scalar(180, 255, 0), -1);
-
-
                     }
+
+                 vector<Point> rectmid2l;
+            vector<float> midlength2l;
+                for (size_t i = 0; i < filteredPoints2l.size()-2; i++)
+                    {
+                        Point p = filteredPoints2l[i];
+                        Point pn = filteredPoints2l[i+2];
+
+
+                        midlength2l.push_back(pointDistance(p,pn));
+                        Point midomid((p.x+pn.x)/2, (p.y+pn.y)/2); // midpoint of the filtered midpoints
+                        rectmid2l.push_back(midomid);
+
+                    //finding the slope
+                    // Calculate the slope as y2-y1 / x2-x1
+                    float slope = (pn.y - p.y) / (float)(pn.x - p.x);
+                    line(image,p, pn, Scalar(0, 255, 0), 2, LINE_AA);
+                    putText(image, format("The angle is %.2f", slope), midomid, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
+                    circle(image, p, 5, Scalar(180, 255, 0), -1);
+                    }
+
+                    vector<Point> rectmid2r;
+                    vector<float> midlength2r;
+                   for (size_t i = 0; i < filteredPoints2r.size()-2; i++)
+                    {
+                        Point p = filteredPoints2r[i];
+                        Point pn = filteredPoints2r[i+2];
+
+
+                        midlength2r.push_back(pointDistance(p,pn));
+                        Point midomid((p.x+pn.x)/2, (p.y+pn.y)/2); // midpoint of the filtered midpoints
+                        rectmid2r.push_back(midomid);
+
+                    //finding the slope
+                    // Calculate the slope as y2-y1 / x2-x1
+                    float slope = (pn.y - p.y) / (float)(pn.x - p.x);
+                    line(image,p, pn, Scalar(0, 255, 0), 2, LINE_AA);
+                    putText(image, format("The angle is %.2f", slope), midomid, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 200, 255), 1, LINE_AA);
+                    circle(image, p, 5, Scalar(180, 255, 0), -1);
+                    }
+
 
 
                     // cout<<" size of rect mid is"<<rectmid.size()<<endl;
@@ -1054,10 +1198,10 @@ for (size_t i = 0; i < filteredPoints.size()-1; i++)
     
 
     // Display the result
-    // imshow("Detected White Lines", image);
+    imshow("Detected White Lines", image);
     // imshow("Extended White Lines", extImage);
     
-    imshow("2l merged"+ to_string(i), checker);
+    // imshow("2l merged"+ to_string(i), checker);
 
     imshow("Detected White Lines and Merged", randomcolored);
 
