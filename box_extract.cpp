@@ -375,14 +375,21 @@ vector<pair<Point, Vec4i>> assignPointsToLines(const vector<Point>& points, cons
 int main() {
     string directory = "ParkingLot_dataset/sequence0/frames"; 
 
-    string groundtruth = "ParkingLot_dataset/sequence0/frames"
+    string groundtruthDirectory = "ParkingLot_dataset/sequence0/frames";
 
     int i =1;    
     for (const auto& entry : fs::directory_iterator(directory)) {
-        vector <cv::Rect> totalrectangles;
+        vector <cv::RotatedRect> totalRectangles; //succeeded in containing all the rectangles in one file
         
         string filepath = entry.path().string();
         string filename = entry.path().filename().string(); // getting the filename
+
+        // matching witht the xml files 
+        string baseName = filename.substr(0, filename.find_last_of('.'));
+
+        string groundtruth = groundtruthDirectory + "/" + baseName + ".xml";
+
+        std::vector<cv::Rect> groundTruthRects = parseXMLGroundTruth(groundtruth); //found the ground truth here
 
         //load the file as image
         Mat image = cv::imread(filepath);
@@ -1198,7 +1205,9 @@ for (size_t i = 0; i < filteredPoints.size()-1; i++)
                         }
 
 //=================================================== building the rotated rectangles=============================================================================
-
+//{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
+                //{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
+                //{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
                 vector<RotatedRect> rec;
                 for (int i = 0; i < assignments.size() - 2; i++) 
                 {
@@ -1222,6 +1231,8 @@ for (size_t i = 0; i < filteredPoints.size()-1; i++)
                 rec.push_back(RotatedRect(center, dim, bestAngle)); 
                 }
 
+                // Append detected rectangles to totalRectangles
+                totalRectangles.insert(totalRectangles.end(), rec.begin(), rec.end()); //
 //-------------------------------------------------------------------------------for second lines left 
                 vector<RotatedRect> rec2l;
                 for (int i = 0; i < assignments2l.size() - 2; i++) 
@@ -1245,6 +1256,7 @@ for (size_t i = 0; i < filteredPoints.size()-1; i++)
 
                 rec2l.push_back(RotatedRect(center, dim, bestAngle)); 
                 }
+                totalRectangles.insert(totalRectangles.end(), rec2l.begin(), rec2l.end());
 
 //-------------------------------------------------------------------------------for second lines right
                 vector<RotatedRect> rec2r;
@@ -1270,7 +1282,12 @@ for (size_t i = 0; i < filteredPoints.size()-1; i++)
                 rec2r.push_back(RotatedRect(center, dim, bestAngle)); 
                 }
 
-                // cout<<" number of rectangles is"<<rec.size()<<endl;
+
+                totalRectangles.insert(totalRectangles.end(), rec2r.begin(), rec2r.end());
+                cout<<" number of rectangles is"<<rec.size()<<endl;
+                cout<<" number of rectangles is"<<rec2l.size()<<endl;
+                cout<<" number of rectangles is"<<rec2r.size()<<endl;
+                cout<<" number of total rectangles is"<<totalRectangles.size()<<endl; //success
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++drawing the rounded rectangles+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -1300,6 +1317,15 @@ for (size_t i = 0; i < filteredPoints.size()-1; i++)
                     for (int i = 0; i < 4; i++)
                         line(blackimg, vertices[i], vertices[(i+1)%4], Scalar(214,108,98), 3);
                 }
+
+                for(const auto& rectangle : totalRectangles)
+                {
+
+                Point2f vertices[4];
+                    rectangle.points(vertices);
+                    for (int i = 0; i < 4; i++)
+                        line(checker, vertices[i], vertices[(i+1)%4], Scalar(214,108,98), 3);
+                }
                 
 
         //----------------------------------------------------------eliminating the lines which are off angle in the ones that are connected
@@ -1322,6 +1348,7 @@ for (size_t i = 0; i < filteredPoints.size()-1; i++)
     imshow("Detected White Lines and Merged", randomcolored);
 
     imshow("Final", blackimg); // the lines of first parking lot
+    imshow("merged rectangles"+ to_string(i), checker);
 
         i++;
         waitKey(0); 
