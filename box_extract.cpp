@@ -6,6 +6,8 @@
 #include <opencv2/opencv.hpp>
 #include <cmath>
 #include "utilities.hpp"
+#include "xmlgroundparcing.hpp"
+#include "mioumap.hpp"
 
 namespace fs = std::filesystem;
 using namespace std;
@@ -375,7 +377,7 @@ vector<pair<Point, Vec4i>> assignPointsToLines(const vector<Point>& points, cons
 int main() {
     string directory = "ParkingLot_dataset/sequence0/frames"; 
 
-    string groundtruthDirectory = "ParkingLot_dataset/sequence0/frames";
+    string groundtruthDirectory = "ParkingLot_dataset/sequence0/bounding_boxes";
 
     int i =1;    
     for (const auto& entry : fs::directory_iterator(directory)) {
@@ -390,6 +392,9 @@ int main() {
         string groundtruth = groundtruthDirectory + "/" + baseName + ".xml";
 
         std::vector<cv::Rect> groundTruthRects = parseXMLGroundTruth(groundtruth); //found the ground truth here
+
+        cout<<"ground truth rectangles in "+ to_string(i) <<"is"<<groundTruthRects.size(); 
+
 
         //load the file as image
         Mat image = cv::imread(filepath);
@@ -1326,7 +1331,31 @@ for (size_t i = 0; i < filteredPoints.size()-1; i++)
                     for (int i = 0; i < 4; i++)
                         line(checker, vertices[i], vertices[(i+1)%4], Scalar(214,108,98), 3);
                 }
-                
+
+
+            //{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
+            //{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
+
+            //convert each of the rotated rectangles to the corresponding bounding rectangles
+
+            std::vector<cv::Rect> totalBoundingBoxRectangles;
+            for(const auto& rectangle : totalRectangles)
+                {
+
+                    cv::Rect boundingBox = rectangle.boundingRect();
+                    totalBoundingBoxRectangles.push_back(boundingBox);
+
+                // Point2f vertices[4];
+                //     rectangle.points(vertices);
+                //     for (int i = 0; i < 4; i++)
+                //         line(checker, vertices[i], vertices[(i+1)%4], Scalar(214,108,98), 3);
+                }
+            
+
+
+             double mAP = calculateMeanAveragePrecision(totalBoundingBoxRectangles, groundTruthRects , 0.5);
+    
+            std::cout << "Mean Average Precision (mAP) at IoU 0.5: " << mAP << std::endl;
 
         //----------------------------------------------------------eliminating the lines which are off angle in the ones that are connected
 
