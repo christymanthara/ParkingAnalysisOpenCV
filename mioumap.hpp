@@ -5,6 +5,7 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include <vector>
+#include <string>
 
 // Function to calculate Intersection over Union (IoU) between two rectangles
 double calculateIoU(const cv::Rect& rectA, const cv::Rect& rectB);

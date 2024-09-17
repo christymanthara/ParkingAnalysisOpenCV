@@ -6,7 +6,7 @@
 #include <opencv2/opencv.hpp>
 #include <cmath>
 #include "utilities.hpp"
-#include "xmlgroundparcing.hpp"
+#include "xmlgroundparsing.hpp"
 #include "mioumap.hpp"
 
 namespace fs = std::filesystem;
@@ -375,9 +375,9 @@ vector<pair<Point, Vec4i>> assignPointsToLines(const vector<Point>& points, cons
 
 
 int main() {
-    string directory = "ParkingLot_dataset/sequence0/frames"; 
+    string directory = "ParkingLot_dataset/sequence4/frames"; 
 
-    string groundtruthDirectory = "ParkingLot_dataset/sequence0/bounding_boxes";
+    string groundtruthDirectory = "ParkingLot_dataset/sequence4/bounding_boxes";
 
     int i =1;    
     for (const auto& entry : fs::directory_iterator(directory)) {
@@ -389,12 +389,18 @@ int main() {
         // matching witht the xml files 
         string baseName = filename.substr(0, filename.find_last_of('.'));
 
-        string groundtruth = groundtruthDirectory + "/" + baseName + ".xml";
+        string groundtruth = groundtruthDirectory + "/" + baseName + ".xml"; // the xml file with the ground truth
 
         std::vector<cv::Rect> groundTruthRects = parseXMLGroundTruth(groundtruth); //found the ground truth here
 
         cout<<"ground truth rectangles in "+ to_string(i) <<"is"<<groundTruthRects.size(); 
 
+        // finding the occupied spaces from the ground truth
+
+        std::vector<cv::Rect> occupiedSpacesGround = parseOccupiedSpaces(groundtruth);
+
+        //the coccupied spaces are
+        cout<<"ground occupied spaces are "+ to_string(i) <<"is"<<occupiedSpacesGround.size(); 
 
         //load the file as image
         Mat image = cv::imread(filepath);
