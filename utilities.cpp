@@ -4,10 +4,6 @@ using namespace std;
 using namespace cv;
 
 
-
-
-
-
 // Mat extImage;
 // RNG rnc;
 Mat rotrectoutput;
@@ -49,6 +45,67 @@ Mat masking(Mat image,int i) //works perfectly
         polygon_corners.push_back(cv::Point(911, 596)); 
         polygon_corners.push_back(cv::Point(412, 19));  
         
+
+        fillPoly(blackimg, polygon_corners, Scalar(255, 255, 255)); //fill the mask with white
+        // imshow("Blackimage filled" + to_string(i),blackimg);
+
+        //applyinng the mask to the original image
+        bitwise_and(image,image,masked_image,blackimg);
+        // imshow("And Mask Applied" + to_string(i),masked_image);
+        // bitwise_not(image,masked_image,blackimg);
+        // imshow("Not Mask Applied" + to_string(i),masked_image); //using the not mask also removes the white lines into black
+
+        return masked_image;
+        
+}
+
+Mat masking2r(Mat image,int i) //works perfectly for the second set of lines
+{
+    std::vector<cv::Point> polygon_corners;
+    Mat masked_image;
+
+    //create a black image of the same size as the original image
+        Mat blackimg = Mat::zeros(image.size(),CV_8UC1);
+        // imshow("Blackimage" + to_string(i),blackimg);
+
+    //taking the polygon area (hard coding)
+        polygon_corners.push_back(cv::Point(695, 1)); 
+        polygon_corners.push_back(cv::Point(777, 4)); 
+        polygon_corners.push_back(cv::Point(798, 4));  
+        
+        polygon_corners.push_back(cv::Point(1260, 311));  
+        polygon_corners.push_back(cv::Point(1268, 372)); 
+        polygon_corners.push_back(cv::Point(1192, 359));  
+        
+
+        fillPoly(blackimg, polygon_corners, Scalar(255, 255, 255)); //fill the mask with white
+        // imshow("Blackimage filled" + to_string(i),blackimg);
+
+        //applyinng the mask to the original image
+        bitwise_and(image,image,masked_image,blackimg);
+        // imshow("And Mask Applied" + to_string(i),masked_image);
+        // bitwise_not(image,masked_image,blackimg);
+        // imshow("Not Mask Applied" + to_string(i),masked_image); //using the not mask also removes the white lines into black
+
+        return masked_image;
+        
+}
+
+Mat masking2l(Mat image,int i) //works perfectly for the second set of lines
+{
+    std::vector<cv::Point> polygon_corners;
+    Mat masked_image;
+
+    //create a black image of the same size as the original image
+        Mat blackimg = Mat::zeros(image.size(),CV_8UC1);
+        // imshow("Blackimage" + to_string(i),blackimg);
+
+    //taking the polygon area (hard coding)
+          
+        polygon_corners.push_back(cv::Point(599, 29));  
+        polygon_corners.push_back(cv::Point(663, 5)); 
+        polygon_corners.push_back(cv::Point(1225,415 )); 
+        polygon_corners.push_back(cv::Point(1162,488)); 
 
         fillPoly(blackimg, polygon_corners, Scalar(255, 255, 255)); //fill the mask with white
         // imshow("Blackimage filled" + to_string(i),blackimg);

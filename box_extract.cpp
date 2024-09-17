@@ -403,7 +403,7 @@ int main() {
         masked = masking(image,i); //masked lines for the first set
         // masked2l = masking2(image,i); //masked lines for the second set
         image.copyTo(extImage);
-        
+        // imshow("colorxyz"+ to_string(i), imgxyz);
 
 
         Mat randomcolored;
@@ -418,7 +418,7 @@ int main() {
         masked = masking(imgxyz,i);
         masked2l = masking2l(imgxyz,i);
         masked2r = masking2r(imgxyz,i);
-        // imshow("masked2l"+ to_string(i), masked2l); 
+        imshow("masked2l"+ to_string(i), masked2l); 
         // imshow("masked2r"+ to_string(i), masked2r); 
 
 
@@ -1257,7 +1257,7 @@ for (size_t i = 0; i < filteredPoints.size()-1; i++)
                 float bestLength = l1 > l2 ? l1  : l2; // Width of the rectangle (scaled)
                 // float bestLength = l1 > l2 ? l1  : l2 ; // Width of the rectangle (scaled)
                 
-                float bestMid = midlength2r[i]*0.8;  //height of the rectangle
+                float bestMid = midlength2r[i]*0.5;  //height of the rectangle
 
                 
 
