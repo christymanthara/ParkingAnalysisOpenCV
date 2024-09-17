@@ -375,8 +375,11 @@ vector<pair<Point, Vec4i>> assignPointsToLines(const vector<Point>& points, cons
 int main() {
     string directory = "ParkingLot_dataset/sequence0/frames"; 
 
+    string groundtruth = "ParkingLot_dataset/sequence0/frames"
+
     int i =1;    
     for (const auto& entry : fs::directory_iterator(directory)) {
+        vector <cv::Rect> totalrectangles;
         
         string filepath = entry.path().string();
         string filename = entry.path().filename().string(); // getting the filename
