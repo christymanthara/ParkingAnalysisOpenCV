@@ -375,9 +375,9 @@ vector<pair<Point, Vec4i>> assignPointsToLines(const vector<Point>& points, cons
 
 
 int main() {
-    string directory = "ParkingLot_dataset/sequence4/frames"; 
+    string directory = "ParkingLot_dataset/sequence0/frames"; 
 
-    string groundtruthDirectory = "ParkingLot_dataset/sequence4/bounding_boxes";
+    string groundtruthDirectory = "ParkingLot_dataset/sequence0/bounding_boxes";
 
     int i =1;    
     for (const auto& entry : fs::directory_iterator(directory)) {
@@ -439,8 +439,9 @@ int main() {
         masked = masking(imgxyz,i);
         masked2l = masking2l(imgxyz,i);
         masked2r = masking2r(imgxyz,i);
-        imshow("masked2l"+ to_string(i), masked2l); 
+        // imshow("masked2l"+ to_string(i), masked2l); 
         // imshow("masked2r"+ to_string(i), masked2r); 
+        // imshow("masked"+ to_string(i), masked); 
 
 
         //
@@ -450,8 +451,8 @@ int main() {
         gammaCorrection(masked2l, gammaresult2l, gamma);
         gammaCorrection(masked2r, gammaresult2r, gamma);
 
-        // imshow("Gamma corrected "+ to_string(i), gammaresult2l); 
-        // imshow("Gamma corrected "+ to_string(i), gammaresult2r); 
+        // imshow("Gamma corrected 2l "+ to_string(i), gammaresult2l); 
+        // imshow("Gamma corrected 2r "+ to_string(i), gammaresult2r); 
 
 
 
@@ -470,8 +471,10 @@ int main() {
         cvtColor(gammaresult, gray, COLOR_BGR2GRAY);
         cvtColor(gammaresult2l, gray2l, COLOR_BGR2GRAY);
         cvtColor(gammaresult2r, gray2r, COLOR_BGR2GRAY);
-        // imshow("gray"+ to_string(i), gray2l);
-        
+        // imshow("gray2l"+ to_string(i), gray2l);
+        // imshow("gray"+ to_string(i), gray);
+        // imshow("gray2r"+ to_string(i), gray2r);
+        // imshow("gray2l"+ to_string(i), gray2l);
         //-------------------------------------------------------applying morphological operation-----------------------------------
         morphologyEx( gray, final,MORPH_GRADIENT, Mat());
         Mat final2l,final2r;

@@ -31,4 +31,37 @@ find the edges of the lines using the contours
 find rotatedrectangles that fit inbetween these lines
 sort them by area
 
+Making the slopes positive.
+------------------------------------------------------
+check if all the slopes of the filtered lines are positive if not make it positive 
      
+
+
+     Updated algorithm
+     -------------------------------------
+     1. color to xyz
+     2.apply gamma
+     2.5 . apply mser and draw bounding boxes -no
+     3,convert to grayscale
+     4.Apply morphologyex with morph gradient and morph cross
+     5. Apply thresholding with binary+otsu
+     6. Apply canny edge detector
+     6.5: finding contours-no
+     7. : Apply canny edge detector
+     8. USe houghlinesP to find the line segments
+     9. find slope of lines. and filter based on the slope angles
+     10. if lines still persist filter them by a distance threshold to group them together
+     11. Find the midpoint of each of these lines
+     12. sory the midpoints and lines by the y coordinate from the end
+     12, In case of the first set of midpoints if they are collinear then choose a midpoint as a point in the middle
+     13. for the other 2 sett of midpoints leave them as such as the mask has been hard coded
+     14.  Sort the mid points again
+     15. find the lines from the filtered and merged lines which are close to the midpoint we have found.
+     16. join the midpoints and find their center of each pair to make it the center of the rotated rectangles
+     17. find the distance between consecutive midpoints, reduce it by 80 percent if its over a threshold. else keep the same and make it the width if the rotated rectangles
+     18. choose the largest of the 2 lines detected and make it the length of the rotated rectangles
+     19. convert the rotated rectangles to normal rectangles
+     20. use the final rectangles obtained to check with the ground truth.
+     
+
+

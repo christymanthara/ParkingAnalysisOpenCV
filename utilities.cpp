@@ -139,7 +139,7 @@ static Mat findlines(Mat img,int i)
 
 }
 
-static Mat applyMSER(Mat img, int i)
+ Mat applyMSER(Mat img, int i)
 {
         Mat output(img.size(),CV_8UC3);
         output = cv::Scalar(255,255,255);
